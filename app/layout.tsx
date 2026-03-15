@@ -6,16 +6,29 @@ export const metadata: Metadata = {
   description:
     'Bulletproof QA in minutes. Functional tests, accessibility, performance, security — all in one audit. Get your ShipScore and ship with confidence.',
   keywords: ['QA', 'quality assurance', 'app testing', 'accessibility', 'performance', 'solo builders'],
+  icons: {
+    icon: '/favicon.svg',
+    apple: '/icons/apple-touch-icon.svg',
+  },
   openGraph: {
     title: 'CanIShip — Can Your App Ship?',
     description: 'AI-powered app audit. One URL. One score. Ship or fix.',
     type: 'website',
     url: 'https://caniship.actvli.com',
+    images: [
+      {
+        url: 'https://caniship.actvli.com/og-image.svg',
+        width: 1200,
+        height: 630,
+        alt: 'CanIShip — AI-Powered App QA',
+      },
+    ],
   },
   twitter: {
     card: 'summary_large_image',
     title: 'CanIShip — AI QA for Solo Builders',
     description: 'Get your ShipScore in minutes. Know exactly what to fix before launch.',
+    images: ['https://caniship.actvli.com/og-image.svg'],
   },
 }
 

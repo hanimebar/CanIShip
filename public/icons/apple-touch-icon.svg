@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 180 180" fill="none">
+  <rect width="180" height="180" rx="40" fill="#0D0D0D"/>
+  <!-- Ship hull -->
+  <path d="M28 128 L44 148 L136 148 L152 128 Z" fill="#00FF88"/>
+  <!-- Hull shine -->
+  <path d="M28 128 L44 148 L68 148 L52 128 Z" fill="#00D474" opacity="0.35"/>
+  <!-- Cabin -->
+  <rect x="62" y="90" width="56" height="40" rx="6" fill="#00FF88"/>
+  <!-- Windows -->
+  <rect x="70" y="100" width="14" height="12" rx="3" fill="#0D0D0D" opacity="0.45"/>
+  <rect x="96" y="100" width="14" height="12" rx="3" fill="#0D0D0D" opacity="0.45"/>
+  <!-- Smokestack -->
+  <rect x="108" y="76" width="12" height="24" rx="4" fill="#00D474"/>
+  <!-- Mast -->
+  <rect x="86" y="40" width="8" height="52" rx="3" fill="#00FF88"/>
+  <!-- Flag -->
+  <path d="M94 40 L130 56 L94 72 Z" fill="#00D474"/>
+  <path d="M94 40 L130 56 L112 56 L94 50 Z" fill="#00FF88" opacity="0.35"/>
+  <!-- Wake -->
+  <path d="M24 158 Q56 150 90 158 Q124 166 156 158" stroke="#00FF88" stroke-width="3.5" stroke-linecap="round" fill="none" opacity="0.45"/>
+</svg>

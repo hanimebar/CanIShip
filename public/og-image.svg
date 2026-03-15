@@ -1,0 +1,59 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 630" fill="none">
+  <!-- Background -->
+  <rect width="1200" height="630" fill="#0D0D0D"/>
+
+  <!-- Subtle grid -->
+  <defs>
+    <pattern id="grid" width="60" height="60" patternUnits="userSpaceOnUse">
+      <path d="M 60 0 L 0 0 0 60" fill="none" stroke="#00FF88" stroke-width="0.3" opacity="0.08"/>
+    </pattern>
+  </defs>
+  <rect width="1200" height="630" fill="url(#grid)"/>
+
+  <!-- Glow blob -->
+  <ellipse cx="200" cy="315" rx="300" ry="280" fill="#00FF88" opacity="0.04"/>
+  <ellipse cx="1050" cy="315" rx="220" ry="200" fill="#00FF88" opacity="0.03"/>
+
+  <!-- Left: Icon -->
+  <rect x="80" y="195" width="200" height="200" rx="36" fill="#111" stroke="#00FF88" stroke-width="2" opacity="0.9"/>
+  <!-- Ship hull -->
+  <path d="M104 358 L122 376 L260 376 L278 358 Z" fill="#00FF88"/>
+  <!-- Cabin -->
+  <rect x="152" y="314" width="96" height="52" rx="8" fill="#00FF88"/>
+  <!-- Windows -->
+  <rect x="166" y="328" width="20" height="16" rx="3" fill="#0D0D0D" opacity="0.5"/>
+  <rect x="202" y="328" width="20" height="16" rx="3" fill="#0D0D0D" opacity="0.5"/>
+  <!-- Mast -->
+  <rect x="177" y="258" width="12" height="58" rx="4" fill="#00FF88"/>
+  <!-- Flag -->
+  <path d="M189 258 L234 278 L189 298 Z" fill="#00D474"/>
+  <!-- Smokestack -->
+  <rect x="226" y="302" width="18" height="34" rx="4" fill="#00D474"/>
+  <!-- Wake -->
+  <path d="M92 388 Q138 380 184 388 Q230 396 276 388" stroke="#00FF88" stroke-width="4" stroke-linecap="round" fill="none" opacity="0.4"/>
+
+  <!-- Wordmark -->
+  <text x="310" y="290" font-family="'Courier New', monospace" font-size="96" font-weight="900" fill="white" letter-spacing="-2">Can</text>
+  <text x="310" y="390" font-family="'Courier New', monospace" font-size="96" font-weight="900" fill="#00FF88" letter-spacing="-2">IShip?</text>
+
+  <!-- Tagline -->
+  <text x="310" y="440" font-family="'Courier New', monospace" font-size="24" fill="#666" letter-spacing="1">AI-POWERED QA FOR SOLO BUILDERS</text>
+
+  <!-- Score badge -->
+  <rect x="870" y="180" width="250" height="270" rx="20" fill="#111" stroke="#00FF88" stroke-width="1.5" opacity="0.8"/>
+  <!-- Score label -->
+  <text x="995" y="225" font-family="'Courier New', monospace" font-size="14" fill="#666" text-anchor="middle" letter-spacing="3">SHIPSCORE™</text>
+  <!-- Big number -->
+  <text x="995" y="330" font-family="'Courier New', monospace" font-size="110" font-weight="900" fill="#00FF88" text-anchor="middle" style="filter: drop-shadow(0 0 20px #00FF88aa)">87</text>
+  <!-- Verdict -->
+  <rect x="910" y="355" width="170" height="38" rx="8" fill="#00FF88" opacity="0.15"/>
+  <text x="995" y="380" font-family="'Courier New', monospace" font-size="18" font-weight="700" fill="#00FF88" text-anchor="middle" letter-spacing="2">SHIP IT ✓</text>
+  <!-- Divider -->
+  <line x1="910" y1="410" x2="1080" y2="410" stroke="#222" stroke-width="1"/>
+  <!-- Mini stats -->
+  <text x="995" y="436" font-family="'Courier New', monospace" font-size="13" fill="#555" text-anchor="middle">2 bugs · 0 critical · 94 checks</text>
+
+  <!-- Bottom strip -->
+  <rect x="0" y="600" width="1200" height="30" fill="#00FF88" opacity="0.06"/>
+  <text x="600" y="620" font-family="'Courier New', monospace" font-size="14" fill="#444" text-anchor="middle" letter-spacing="4">CANISHIP.ACTVLI.COM</text>
+</svg>

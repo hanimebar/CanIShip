@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 280 64" fill="none">
+  <!-- Icon mark -->
+  <rect width="56" height="56" x="4" y="4" rx="12" fill="#0D0D0D" stroke="#00FF88" stroke-width="1.5"/>
+
+  <!-- Ship hull -->
+  <path d="M12 38 L18 44 L44 44 L50 38 Z" fill="#00FF88"/>
+  <!-- Ship cabin/bridge -->
+  <rect x="22" y="28" width="18" height="10" rx="2" fill="#00FF88"/>
+  <!-- Mast -->
+  <rect x="29" y="18" width="2.5" height="12" rx="1" fill="#00FF88"/>
+  <!-- Flag -->
+  <path d="M31.5 18 L40 22 L31.5 26 Z" fill="#00D474"/>
+  <!-- Water line dots -->
+  <circle cx="18" cy="47" r="1.5" fill="#00FF88" opacity="0.5"/>
+  <circle cx="28" cy="48" r="1.5" fill="#00FF88" opacity="0.35"/>
+  <circle cx="38" cy="47" r="1.5" fill="#00FF88" opacity="0.5"/>
+
+  <!-- Wordmark -->
+  <text x="72" y="41" font-family="'JetBrains Mono', 'Fira Code', 'Courier New', monospace" font-size="28" font-weight="800" fill="#FFFFFF" letter-spacing="-0.5">Can</text>
+  <text x="138" y="41" font-family="'JetBrains Mono', 'Fira Code', 'Courier New', monospace" font-size="28" font-weight="800" fill="#00FF88" letter-spacing="-0.5">IShip</text>
+</svg>

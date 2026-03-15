@@ -1,0 +1,35 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" fill="none">
+  <!-- Background -->
+  <rect width="512" height="512" rx="96" fill="#0D0D0D"/>
+  <!-- Subtle border -->
+  <rect width="509" height="509" x="1.5" y="1.5" rx="95" fill="none" stroke="#00FF88" stroke-width="3" opacity="0.6"/>
+
+  <!-- Ship hull — wide trapezoid -->
+  <path d="M96 318 L126 358 L386 358 L416 318 Z" fill="#00FF88"/>
+
+  <!-- Hull shine -->
+  <path d="M96 318 L126 358 L180 358 L150 318 Z" fill="#00D474" opacity="0.4"/>
+
+  <!-- Cabin/superstructure -->
+  <rect x="176" y="224" width="160" height="96" rx="10" fill="#00FF88"/>
+  <!-- Cabin window -->
+  <rect x="196" y="244" width="36" height="28" rx="5" fill="#0D0D0D" opacity="0.5"/>
+  <rect x="246" y="244" width="36" height="28" rx="5" fill="#0D0D0D" opacity="0.5"/>
+  <rect x="296" y="244" width="24" height="28" rx="5" fill="#0D0D0D" opacity="0.5"/>
+
+  <!-- Mast -->
+  <rect x="246" y="136" width="20" height="92" rx="6" fill="#00FF88"/>
+
+  <!-- Flag -->
+  <path d="M266 136 L348 174 L266 212 Z" fill="#00D474"/>
+  <!-- Flag highlight -->
+  <path d="M266 136 L348 174 L310 174 L266 155 Z" fill="#00FF88" opacity="0.4"/>
+
+  <!-- Smoke stack -->
+  <rect x="308" y="200" width="28" height="56" rx="6" fill="#00D474"/>
+  <ellipse cx="322" cy="200" rx="14" ry="6" fill="#00FF88"/>
+
+  <!-- Water / wake lines -->
+  <path d="M72 376 Q128 366 184 376 Q240 386 296 376 Q352 366 440 376" stroke="#00FF88" stroke-width="6" stroke-linecap="round" fill="none" opacity="0.5"/>
+  <path d="M96 396 Q152 386 208 396 Q264 406 320 396 Q376 386 416 396" stroke="#00FF88" stroke-width="4" stroke-linecap="round" fill="none" opacity="0.3"/>
+</svg>

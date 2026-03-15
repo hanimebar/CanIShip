@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" fill="none">
+  <rect width="32" height="32" rx="6" fill="#0D0D0D"/>
+  <!-- Hull -->
+  <path d="M4 21 L7 24 L25 24 L28 21 Z" fill="#00FF88"/>
+  <!-- Cabin -->
+  <rect x="10" y="15" width="12" height="7" rx="1.5" fill="#00FF88"/>
+  <!-- Mast -->
+  <rect x="15" y="8" width="2" height="8" rx="1" fill="#00FF88"/>
+  <!-- Flag -->
+  <path d="M17 8 L23 11 L17 14 Z" fill="#00D474"/>
+</svg>
