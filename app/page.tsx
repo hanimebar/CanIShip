@@ -53,7 +53,7 @@ const differentiators = [
       </svg>
     ),
     title: 'Priced for humans',
-    description: 'Not $500/month. Not $50/month. From $19.',
+    description: 'Not $500/month. Not enterprise pricing. From €19.',
   },
 ]
 
@@ -133,7 +133,7 @@ export default function LandingPage() {
             </Link>
           </div>
 
-          <p className="text-xs text-gray-600 mt-4">No credit card required · 3 free audits/month</p>
+          <p className="text-xs text-gray-600 mt-4">No credit card required · 1 free audit/month</p>
         </div>
       </section>
 
@@ -254,25 +254,25 @@ export default function LandingPage() {
             {[
               {
                 name: 'Free',
-                price: '$0',
+                price: '€0',
                 period: 'forever',
-                features: ['3 audits/month', 'Quick Scan only', 'Basic report'],
+                features: ['1 audit/month', 'Quick Scan only', 'Basic report'],
                 cta: 'Start free',
                 href: '/signup',
                 highlight: false,
               },
               {
                 name: 'Builder',
-                price: '$19',
+                price: '€19',
                 period: '/month',
-                features: ['20 audits/month', 'All scan depths', 'Full reports', 'Audit history'],
+                features: ['10 audits/month', 'All scan depths', 'Full reports', 'Audit history'],
                 cta: 'Start Building',
                 href: '/signup',
                 highlight: true,
               },
               {
                 name: 'Studio',
-                price: '$49',
+                price: '€49',
                 period: '/month',
                 features: ['Unlimited audits', 'All Builder features', 'Docker self-hosted', 'API access'],
                 cta: 'Go Studio',

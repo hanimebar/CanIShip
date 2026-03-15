@@ -11,7 +11,7 @@ const plans = [
     period: 'forever',
     description: 'Try it out. No credit card, no commitment.',
     features: [
-      { text: '3 audits per month', included: true },
+      { text: '1 audit per month', included: true },
       { text: 'Quick Scan only (~5 min)', included: true },
       { text: 'Basic report (bugs, console errors)', included: true },
       { text: 'Broken link detection', included: true },
@@ -29,11 +29,11 @@ const plans = [
   {
     id: 'builder',
     name: 'Builder',
-    price: '$19',
+    price: '€19',
     period: '/month',
     description: 'For serious builders who ship regularly.',
     features: [
-      { text: '20 audits per month', included: true },
+      { text: '10 audits per month', included: true },
       { text: 'Quick, Standard, and Deep scans', included: true },
       { text: 'Full reports — every category', included: true },
       { text: 'Risk & Rewards analysis', included: true },
@@ -51,7 +51,7 @@ const plans = [
   {
     id: 'studio',
     name: 'Studio',
-    price: '$49',
+    price: '€49',
     period: '/month',
     description: 'Unlimited audits. Run CanIShip on your own infra.',
     features: [
