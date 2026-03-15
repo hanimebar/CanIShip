@@ -1,8 +1,11 @@
-import type { NextConfig } from 'next'
+import { createRequire } from 'module'
+import { fileURLToPath } from 'url'
 import path from 'path'
 
+const __filename = fileURLToPath(import.meta.url)
+const __dirname = path.dirname(__filename)
+
 // Packages that are ESM-only or have native deps and cannot be bundled by webpack
-// They must be loaded at runtime via require()/import() in the worker process
 const RUNTIME_ONLY_PACKAGES = [
   'lighthouse',
   'chrome-launcher',
@@ -15,7 +18,8 @@ const RUNTIME_ONLY_PACKAGES = [
   'ioredis',
 ]
 
-const nextConfig: NextConfig = {
+/** @type {import('next').NextConfig} */
+const nextConfig = {
   experimental: {
     serverComponentsExternalPackages: RUNTIME_ONLY_PACKAGES,
   },
@@ -40,7 +44,6 @@ const nextConfig: NextConfig = {
       }
     }
 
-    // Use IgnorePlugin to completely prevent webpack from processing these packages
     config.plugins = config.plugins || []
     config.plugins.push(
       new webpack.IgnorePlugin({
@@ -48,9 +51,8 @@ const nextConfig: NextConfig = {
       })
     )
 
-    // Also use resolve.alias to stub them for any remaining references
     const stubPath = path.resolve(__dirname, 'lib/stubs/empty-stub.js')
-    const aliases: Record<string, string> = {}
+    const aliases = {}
     for (const pkg of RUNTIME_ONLY_PACKAGES) {
       aliases[pkg] = stubPath
     }
