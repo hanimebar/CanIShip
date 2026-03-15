@@ -20,6 +20,7 @@ const RUNTIME_ONLY_PACKAGES = [
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  output: 'standalone',
   experimental: {
     serverComponentsExternalPackages: RUNTIME_ONLY_PACKAGES,
   },
