@@ -2,26 +2,127 @@
 @tailwind components;
 @tailwind utilities;
 
+@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=Inter:wght@400;500;600;700;800;900&display=swap');
+
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --background: #0A0A0A;
+  --foreground: #EDEDED;
+  --neon-green: #00FF88;
+  --neon-green-dim: #00C269;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+* {
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
 }
 
 body {
   color: var(--foreground);
   background: var(--background);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: 'Inter', system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: #111111;
+}
+::-webkit-scrollbar-thumb {
+  background: #333333;
+  border-radius: 3px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #00FF88;
 }
 
 @layer utilities {
   .text-balance {
     text-wrap: balance;
   }
+
+  .font-mono-brand {
+    font-family: 'JetBrains Mono', 'Fira Code', monospace;
+  }
+
+  /* Glow effects */
+  .glow-green {
+    box-shadow: 0 0 20px rgba(0, 255, 136, 0.3), 0 0 40px rgba(0, 255, 136, 0.1);
+  }
+  .glow-green-sm {
+    box-shadow: 0 0 8px rgba(0, 255, 136, 0.4);
+  }
+  .text-glow-green {
+    text-shadow: 0 0 20px rgba(0, 255, 136, 0.5);
+  }
+
+  /* Score colors */
+  .score-excellent { color: #00FF88; }
+  .score-good { color: #00C269; }
+  .score-ok { color: #FFD60A; }
+  .score-poor { color: #FF9500; }
+  .score-critical { color: #FF3B30; }
+
+  /* Card styles */
+  .issue-card {
+    @apply rounded-lg border p-4 mb-3;
+  }
+  .issue-card-critical {
+    @apply issue-card border-red-500/30 bg-red-500/5;
+  }
+  .issue-card-ux {
+    @apply issue-card border-orange-500/30 bg-orange-500/5;
+  }
+  .issue-card-accessibility {
+    @apply issue-card border-purple-500/30 bg-purple-500/5;
+  }
+  .issue-card-performance {
+    @apply issue-card border-blue-500/30 bg-blue-500/5;
+  }
+  .issue-card-security {
+    @apply issue-card border-red-900/50 bg-red-900/10;
+  }
+  .issue-card-warning {
+    @apply issue-card border-yellow-500/30 bg-yellow-500/5;
+  }
+  .issue-card-passed {
+    @apply issue-card border-green-500/30 bg-green-500/5;
+  }
+}
+
+/* Animations */
+@keyframes scoreIn {
+  0% { transform: scale(0.5); opacity: 0; }
+  100% { transform: scale(1); opacity: 1; }
+}
+
+@keyframes fadeUp {
+  0% { transform: translateY(20px); opacity: 0; }
+  100% { transform: translateY(0); opacity: 1; }
+}
+
+@keyframes shimmer {
+  0% { background-position: -1000px 0; }
+  100% { background-position: 1000px 0; }
+}
+
+.animate-score-in {
+  animation: scoreIn 0.8s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+}
+
+.animate-fade-up {
+  animation: fadeUp 0.5s ease forwards;
+}
+
+.skeleton {
+  background: linear-gradient(90deg, #1A1A1A 25%, #222222 50%, #1A1A1A 75%);
+  background-size: 1000px 100%;
+  animation: shimmer 2s infinite;
 }
