@@ -1,0 +1,54 @@
+# CanIShip — Worker Dockerfile
+# Runs the background audit processor (Playwright + Lighthouse + Claude)
+# Deploy as a separate Railway service with start command: node scripts/run-worker.js
+
+FROM node:20-bookworm-slim
+
+# System dependencies for Playwright + Lighthouse
+RUN apt-get update && apt-get install -y \
+    libnss3 \
+    libnspr4 \
+    libatk1.0-0 \
+    libatk-bridge2.0-0 \
+    libcups2 \
+    libdrm2 \
+    libdbus-1-3 \
+    libxkbcommon0 \
+    libatspi2.0-0 \
+    libx11-6 \
+    libxcomposite1 \
+    libxdamage1 \
+    libxext6 \
+    libxfixes3 \
+    libxrandr2 \
+    libgbm1 \
+    libpango-1.0-0 \
+    libcairo2 \
+    libasound2 \
+    wget \
+    gnupg \
+    ca-certificates \
+    fonts-liberation \
+    fonts-noto-color-emoji \
+    --no-install-recommends && \
+    rm -rf /var/lib/apt/lists/*
+
+WORKDIR /app
+
+# Install dependencies
+COPY package.json package-lock.json ./
+RUN npm ci --include=dev
+
+# Install Playwright browser
+RUN npx playwright install chromium
+
+# Copy source files the worker needs
+COPY lib/ ./lib/
+COPY scripts/ ./scripts/
+COPY tsconfig.json ./
+
+# Set Playwright browser path
+ENV PLAYWRIGHT_BROWSERS_PATH=/root/.cache/ms-playwright
+ENV NODE_ENV=production
+
+CMD ["node", "--require", "tsx/cjs", "scripts/run-worker.js"]

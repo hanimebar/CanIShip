@@ -1,7 +1,7 @@
 /**
  * Standalone worker process
- * Run: node scripts/run-worker.js
- * Or: npm run worker
+ * Run: node --require tsx/cjs scripts/run-worker.js
+ * Or:  npm run worker
  *
  * This runs the audit job processor independently of the Next.js app.
  * Required for production: long-running audits should not block API routes.
@@ -11,19 +11,12 @@
 require('dotenv').config({ path: '.env.local' })
 require('dotenv').config({ path: '.env' })
 
-const path = require('path')
-
-// Register TypeScript paths
-const { register } = require('module')
-const { pathToFileURL } = require('url')
-
 async function main() {
   console.log('[CanIShip Worker] Starting...')
-  console.log('[CanIShip Worker] REDIS_URL:', process.env.REDIS_URL ? 'set (BullMQ mode)' : 'not set (Supabase polling mode)')
+  console.log('[CanIShip Worker] Mode:', process.env.REDIS_URL ? 'BullMQ (Redis)' : 'Supabase polling')
 
   try {
-    // Dynamically import TypeScript modules via tsx or compiled output
-    const { initBullMQWorker, startPollingWorker } = await import('../lib/job-queue.js')
+    const { initBullMQWorker, startPollingWorker } = await import('../lib/job-queue.ts')
 
     if (process.env.REDIS_URL) {
       await initBullMQWorker()
@@ -38,7 +31,6 @@ async function main() {
   }
 }
 
-// Graceful shutdown
 process.on('SIGTERM', () => {
   console.log('[CanIShip Worker] SIGTERM received. Shutting down...')
   process.exit(0)
