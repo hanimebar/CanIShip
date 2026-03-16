@@ -22,7 +22,6 @@ export function SettingsClient({ currentName, email, plan, isOAuthUser, hasStrip
   const [nameMsg, setNameMsg] = useState('')
 
   // Password
-  const [currentPassword, setCurrentPassword] = useState('')
   const [newPassword, setNewPassword] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
   const [passwordLoading, setPasswordLoading] = useState(false)
@@ -70,7 +69,6 @@ export function SettingsClient({ currentName, email, plan, isOAuthUser, hasStrip
       setPasswordMsg(`Error: ${error.message}`)
     } else {
       setPasswordMsg('Password updated successfully.')
-      setCurrentPassword('')
       setNewPassword('')
       setConfirmPassword('')
     }
