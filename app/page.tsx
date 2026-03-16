@@ -356,6 +356,105 @@ export default async function LandingPage() {
         </div>
       </section>
 
+      {/* Standards & Transparency */}
+      <section className="px-6 py-16 border-t border-dark-700">
+        <div className="max-w-5xl mx-auto">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-start">
+
+            {/* Standards */}
+            <div>
+              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-dark-400 bg-dark-800 text-gray-400 text-xs font-mono mb-5">
+                WHAT WE TEST AGAINST
+              </div>
+              <h2 className="text-2xl font-bold text-white mb-4">Industry-standard quality checks</h2>
+              <p className="text-gray-400 text-sm mb-6 leading-relaxed">
+                Every CanIShip audit runs against recognised, open standards — the same benchmarks
+                used by professional QA teams and major tech companies.
+              </p>
+              <div className="space-y-3">
+                {[
+                  { label: 'WCAG 2.1 AA', detail: 'Web Content Accessibility Guidelines — international accessibility standard', color: '#AF52DE' },
+                  { label: 'Lighthouse / Core Web Vitals', detail: 'Google performance metrics — LCP, CLS, FCP, TBT, INP', color: '#0A84FF' },
+                  { label: 'OWASP headers', detail: 'OWASP recommended security headers — CSP, HSTS, X-Frame-Options and more', color: '#CC0000' },
+                  { label: 'Playwright functional', detail: 'End-to-end browser automation — the same engine used at Microsoft and Meta', color: '#FF9500' },
+                  { label: 'axe-core', detail: 'The accessibility engine behind Deque, Google Lighthouse, and Microsoft accessibility tools', color: '#7CFF5A' },
+                ].map(({ label, detail, color }) => (
+                  <div key={label} className="flex items-start gap-3 py-2.5 border-b border-dark-700 last:border-0">
+                    <div className="w-1.5 h-1.5 rounded-full flex-shrink-0 mt-1.5" style={{ backgroundColor: color }} />
+                    <div>
+                      <div className="text-sm font-semibold text-white">{label}</div>
+                      <div className="text-xs text-gray-500 mt-0.5">{detail}</div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Honest limitations */}
+            <div>
+              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-dark-400 bg-dark-800 text-gray-400 text-xs font-mono mb-5">
+                HONEST ABOUT WHAT WE ARE
+              </div>
+              <h2 className="text-2xl font-bold text-white mb-4">A first-pass audit, not a final word</h2>
+              <p className="text-gray-400 text-sm mb-5 leading-relaxed">
+                CanIShip gives you a rigorous, automated baseline — the kind of check that would take a
+                senior developer hours to run manually. But no automated tool is perfect or exhaustive.
+              </p>
+
+              <div className="space-y-4">
+                <div className="rounded-xl border border-dark-500 bg-dark-800 p-4">
+                  <div className="flex items-start gap-3">
+                    <svg className="w-5 h-5 text-neon-green flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                    </svg>
+                    <div>
+                      <div className="text-sm font-semibold text-white mb-1">What it covers</div>
+                      <div className="text-xs text-gray-400 leading-relaxed">
+                        Functional navigation, WCAG 2.1 AA accessibility, Core Web Vitals, OWASP security headers,
+                        broken links, console errors, and mobile layout — in one run.
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="rounded-xl border border-dark-500 bg-dark-800 p-4">
+                  <div className="flex items-start gap-3">
+                    <svg className="w-5 h-5 text-yellow-400 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    <div>
+                      <div className="text-sm font-semibold text-white mb-1">What it doesn&apos;t replace</div>
+                      <div className="text-xs text-gray-400 leading-relaxed">
+                        Manual penetration testing, auth-gated flow testing, screen-reader user testing,
+                        load/stress testing, or legal compliance review. For anything with regulatory implications,
+                        always complement this with human expert review.
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="rounded-xl border border-neon-green/10 bg-neon-green/5 p-4">
+                  <div className="flex items-start gap-3">
+                    <svg className="w-5 h-5 text-neon-green flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                    </svg>
+                    <div>
+                      <div className="text-sm font-semibold text-neon-green mb-1">Continuously improving</div>
+                      <div className="text-xs text-gray-400 leading-relaxed">
+                        The web evolves fast. Frameworks change, new vulnerability classes emerge, standards get updated.
+                        We ship regular improvements to the audit engine so your results stay relevant over time.
+                        Every re-audit is a fresh snapshot against the latest checks.
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+          </div>
+        </div>
+      </section>
+
       {/* CTA */}
       <section className="px-6 py-20 border-t border-dark-700 text-center">
         <div className="max-w-2xl mx-auto">
@@ -375,15 +474,87 @@ export default async function LandingPage() {
       </section>
 
       {/* Footer */}
-      <footer className="border-t border-dark-700 px-6 py-8">
-        <div className="max-w-6xl mx-auto flex flex-col md:flex-row items-center justify-between gap-4 text-sm text-gray-600">
-          <div className="font-mono-brand font-bold text-gray-500">CanIShip</div>
-          <div className="flex items-center gap-6">
-            <Link href="/pricing" className="hover:text-gray-400 transition-colors">Pricing</Link>
-            <Link href="/login" className="hover:text-gray-400 transition-colors">Login</Link>
-            <Link href="/signup" className="hover:text-gray-400 transition-colors">Sign up</Link>
+      <footer className="border-t border-dark-700 px-6 pt-10 pb-8">
+        <div className="max-w-6xl mx-auto">
+
+          {/* Top row */}
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-8 mb-10">
+
+            {/* Brand */}
+            <div className="md:col-span-1">
+              <div className="font-mono-brand font-bold text-neon-green text-lg mb-3">CanIShip</div>
+              <p className="text-xs text-gray-600 leading-relaxed mb-4">
+                AI-powered app audit for solo builders. Get your ShipScore in minutes.
+              </p>
+              {/* LinkedIn */}
+              <a
+                href="https://www.linkedin.com/company/actvli"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-2 text-gray-500 hover:text-gray-300 transition-colors"
+                aria-label="Äctvli on LinkedIn"
+              >
+                <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
+                  <path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433a2.062 2.062 0 01-2.063-2.065 2.064 2.064 0 112.063 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/>
+                </svg>
+                <span className="text-xs">LinkedIn</span>
+              </a>
+            </div>
+
+            {/* Product */}
+            <div>
+              <h4 className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">Product</h4>
+              <ul className="space-y-2 text-sm text-gray-600">
+                <li><Link href="/pricing" className="hover:text-gray-400 transition-colors">Pricing</Link></li>
+                <li><Link href="/audit/new" className="hover:text-gray-400 transition-colors">Run an audit</Link></li>
+                <li><Link href="/dashboard" className="hover:text-gray-400 transition-colors">Dashboard</Link></li>
+                <li><Link href="/login" className="hover:text-gray-400 transition-colors">Login</Link></li>
+                <li><Link href="/signup" className="hover:text-gray-400 transition-colors">Sign up free</Link></li>
+              </ul>
+            </div>
+
+            {/* Standards */}
+            <div>
+              <h4 className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">Standards used</h4>
+              <ul className="space-y-2 text-xs text-gray-600">
+                <li>WCAG 2.1 AA</li>
+                <li>Google Lighthouse</li>
+                <li>Core Web Vitals</li>
+                <li>OWASP Security Headers</li>
+                <li>axe-core (Deque)</li>
+                <li>Playwright</li>
+              </ul>
+            </div>
+
+            {/* Legal */}
+            <div>
+              <h4 className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">Legal</h4>
+              <ul className="space-y-2 text-sm text-gray-600">
+                <li><Link href="/privacy" className="hover:text-gray-400 transition-colors">Privacy Policy</Link></li>
+                <li><Link href="/terms" className="hover:text-gray-400 transition-colors">Terms of Service</Link></li>
+              </ul>
+              <div className="mt-4 rounded-lg border border-dark-600 bg-dark-800 p-3">
+                <p className="text-xs text-gray-600 leading-relaxed">
+                  We use only session cookies necessary for authentication. No tracking or advertising cookies.
+                </p>
+              </div>
+            </div>
+
           </div>
-          <div>A product by Actvli Responsible Consulting</div>
+
+          {/* Bottom row */}
+          <div className="border-t border-dark-700 pt-6 flex flex-col md:flex-row items-center justify-between gap-3 text-xs text-gray-700">
+            <div>
+              © {new Date().getFullYear()} Äctvli Responsible Consulting. All rights reserved.
+            </div>
+            <div className="flex items-center gap-4">
+              <Link href="/privacy" className="hover:text-gray-500 transition-colors">Privacy</Link>
+              <Link href="/terms" className="hover:text-gray-500 transition-colors">Terms</Link>
+              <span className="text-gray-800">·</span>
+              <span>Audit results are informational — not a guarantee of security or compliance.</span>
+            </div>
+          </div>
+
         </div>
       </footer>
     </div>
