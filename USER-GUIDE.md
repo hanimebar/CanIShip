@@ -51,7 +51,7 @@ This must be a live, publicly accessible URL. CanIShip's testing engine runs on 
 
 ### Field 2: What does your app do?
 
-Write a plain-English description of your app. This is what tells CanIShip what your app is supposed to do — so it can judge whether it actually does it.
+Write a plain-English description of your app. This is what tells CanIShip what your app is supposed to do — so it can judge whether it actually does it. You can even use the AI read-me file that was created when you first prompted it to find a short description.
 
 **Write it like you would explain it to a friend:**
 

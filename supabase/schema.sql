@@ -125,6 +125,24 @@ CREATE TABLE IF NOT EXISTS public.stripe_events (
 );
 
 -- ============================================================
+-- DOCKER LICENSES (Studio plan self-hosted keys)
+-- ============================================================
+CREATE TABLE IF NOT EXISTS public.docker_licenses (
+  id UUID DEFAULT uuid_generate_v4() PRIMARY KEY,
+  user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE NOT NULL UNIQUE,
+  license_key TEXT NOT NULL UNIQUE,
+  active BOOLEAN NOT NULL DEFAULT true,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+ALTER TABLE public.docker_licenses ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Users can view own license" ON public.docker_licenses FOR SELECT USING (auth.uid() = user_id);
+
+CREATE INDEX IF NOT EXISTS idx_docker_licenses_key ON public.docker_licenses(license_key);
+CREATE INDEX IF NOT EXISTS idx_docker_licenses_user_id ON public.docker_licenses(user_id);
+
+-- ============================================================
 -- Supabase Storage bucket for screenshots
 -- (Run this separately via Supabase dashboard or CLI)
 -- ============================================================

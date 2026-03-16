@@ -8,6 +8,15 @@ import { createSupabaseServiceClient } from '@/lib/supabase'
 
 export const runtime = 'nodejs'
 
+function generateLicenseKey(): string {
+  const chars = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789'
+  let key = 'cis_'
+  for (let i = 0; i < 32; i++) {
+    key += chars[Math.floor(Math.random() * chars.length)]
+  }
+  return key
+}
+
 // Lazy Stripe client — never instantiate at module scope (build-time env not available)
 function getStripe() {
   return new Stripe(process.env.STRIPE_SECRET_KEY!, {
@@ -61,6 +70,15 @@ export async function POST(req: NextRequest) {
               stripe_subscription_id: session.subscription as string,
             })
             .eq('id', userId)
+
+          if (plan === 'studio') {
+            await supabase
+              .from('docker_licenses')
+              .upsert(
+                { user_id: userId, license_key: generateLicenseKey(), active: true, updated_at: new Date().toISOString() },
+                { onConflict: 'user_id', ignoreDuplicates: true }
+              )
+          }
         }
         break
       }
@@ -77,14 +95,41 @@ export async function POST(req: NextRequest) {
           }
           const plan = planMap[priceId] || 'free'
           const status = subscription.status
+          const effectivePlan = status === 'active' ? plan : 'free'
 
           await supabase
             .from('profiles')
             .update({
-              plan: status === 'active' ? plan : 'free',
+              plan: effectivePlan,
               stripe_subscription_id: subscription.id,
             })
             .eq('id', userId)
+
+          if (effectivePlan === 'studio') {
+            // Ensure they have a license key (activate if previously deactivated)
+            const { data: existing } = await supabase
+              .from('docker_licenses')
+              .select('id')
+              .eq('user_id', userId)
+              .single()
+
+            if (existing) {
+              await supabase
+                .from('docker_licenses')
+                .update({ active: true, updated_at: new Date().toISOString() })
+                .eq('user_id', userId)
+            } else {
+              await supabase
+                .from('docker_licenses')
+                .insert({ user_id: userId, license_key: generateLicenseKey(), active: true })
+            }
+          } else {
+            // Downgraded or lapsed — deactivate license
+            await supabase
+              .from('docker_licenses')
+              .update({ active: false, updated_at: new Date().toISOString() })
+              .eq('user_id', userId)
+          }
         }
         break
       }
@@ -98,6 +143,11 @@ export async function POST(req: NextRequest) {
             .from('profiles')
             .update({ plan: 'free', stripe_subscription_id: null })
             .eq('id', userId)
+
+          await supabase
+            .from('docker_licenses')
+            .update({ active: false, updated_at: new Date().toISOString() })
+            .eq('user_id', userId)
         }
         break
       }
