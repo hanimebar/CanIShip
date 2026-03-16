@@ -37,16 +37,20 @@ const depthOptions: Array<{
 
 type Props = {
   userPlan?: string
+  defaultUrl?: string
+  defaultDescription?: string
+  defaultFlows?: string
+  defaultDepth?: Depth
 }
 
-export function AuditForm({ userPlan = 'free' }: Props) {
+export function AuditForm({ userPlan = 'free', defaultUrl = '', defaultDescription = '', defaultFlows = '', defaultDepth = 'quick' }: Props) {
   const router = useRouter()
   const [isPending, startTransition] = useTransition()
 
-  const [url, setUrl] = useState('')
-  const [description, setDescription] = useState('')
-  const [flows, setFlows] = useState('')
-  const [depth, setDepth] = useState<Depth>('quick')
+  const [url, setUrl] = useState(defaultUrl)
+  const [description, setDescription] = useState(defaultDescription)
+  const [flows, setFlows] = useState(defaultFlows)
+  const [depth, setDepth] = useState<Depth>(defaultDepth)
   const [error, setError] = useState('')
   const [isSubmitting, setIsSubmitting] = useState(false)
 

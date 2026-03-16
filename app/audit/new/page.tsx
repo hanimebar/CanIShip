@@ -20,7 +20,11 @@ function createServerSupabase() {
   )
 }
 
-export default async function NewAuditPage() {
+export default async function NewAuditPage({
+  searchParams,
+}: {
+  searchParams: { url?: string; description?: string; flows?: string; depth?: string }
+}) {
   const supabase = createServerSupabase()
   const { data: { user } } = await supabase.auth.getUser()
 
@@ -87,7 +91,13 @@ export default async function NewAuditPage() {
                 <span className="font-mono font-bold">{used} / {limit}</span>
               </div>
             )}
-            <AuditForm userPlan={plan} />
+            <AuditForm
+              userPlan={plan}
+              defaultUrl={searchParams.url || ''}
+              defaultDescription={searchParams.description || ''}
+              defaultFlows={searchParams.flows || ''}
+              defaultDepth={(searchParams.depth as 'quick' | 'standard' | 'deep') || 'quick'}
+            />
           </div>
         )}
 

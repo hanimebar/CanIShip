@@ -3,6 +3,7 @@ import Link from 'next/link'
 import { cookies } from 'next/headers'
 import { createServerClient } from '@supabase/ssr'
 import { createSupabaseServiceClient } from '@/lib/supabase'
+import { SiteGroup } from '@/components/SiteGroup'
 
 function createServerSupabase() {
   const cookieStore = cookies()
@@ -19,29 +20,13 @@ function createServerSupabase() {
   )
 }
 
-function getScoreColor(score: number): string {
-  if (score >= 90) return '#00FF88'
-  if (score >= 70) return '#7CFF5A'
-  if (score >= 50) return '#FFD60A'
-  if (score >= 30) return '#FF9500'
-  return '#FF3B30'
-}
-
-function getVerdictLabel(verdict: string): string {
-  return { yes: 'SHIP IT', conditional: 'CONDITIONAL', no: 'DO NOT SHIP' }[verdict] || verdict.toUpperCase()
-}
-
-function getVerdictColor(verdict: string): string {
-  return { yes: '#00FF88', conditional: '#FFD60A', no: '#FF3B30' }[verdict] || '#8E8E93'
-}
-
-function getStatusColor(status: string): string {
-  return {
-    queued: '#8E8E93',
-    running: '#0A84FF',
-    complete: '#00FF88',
-    failed: '#FF3B30',
-  }[status] || '#8E8E93'
+function normalizeUrl(url: string): string {
+  try {
+    const u = new URL(url)
+    return (u.hostname + u.pathname).replace(/\/$/, '').toLowerCase()
+  } catch {
+    return url.toLowerCase()
+  }
 }
 
 export default async function DashboardPage({
@@ -64,7 +49,7 @@ export default async function DashboardPage({
       .select('*, audit_reports(id, ship_score, ship_verdict)')
       .eq('user_id', user.id)
       .order('created_at', { ascending: false })
-      .limit(50),
+      .limit(100),
     serviceClient
       .from('profiles')
       .select('plan, audits_used_this_month, audits_reset_at')
@@ -80,6 +65,23 @@ export default async function DashboardPage({
   const limit = planLimits[plan as keyof typeof planLimits] ?? 3
   const used = profile?.audits_used_this_month ?? 0
 
+  // Group jobs by normalized URL, preserving recency order
+  const groupMap = new Map<string, typeof jobs>()
+  for (const job of jobs) {
+    const key = normalizeUrl(job.url)
+    if (!groupMap.has(key)) groupMap.set(key, [])
+    groupMap.get(key)!.push(job)
+  }
+
+  // Convert to array sorted by most recent audit across all sites
+  const groups = Array.from(groupMap.entries()).map(([, audits]) => ({
+    url: audits[0].url,
+    audits: audits.map(j => ({
+      ...j,
+      audit_reports: Array.isArray(j.audit_reports) ? j.audit_reports[0] ?? null : j.audit_reports ?? null,
+    })),
+  }))
+
   return (
     <div className="min-h-screen bg-dark-900 text-white">
 
@@ -92,10 +94,7 @@ export default async function DashboardPage({
           <div className="flex items-center gap-4">
             <span className="text-xs font-mono text-gray-500 capitalize">{plan} plan</span>
             <form action="/api/auth/signout" method="POST">
-              <button
-                type="submit"
-                className="text-sm text-gray-400 hover:text-white transition-colors"
-              >
+              <button type="submit" className="text-sm text-gray-400 hover:text-white transition-colors">
                 Sign out
               </button>
             </form>
@@ -123,7 +122,7 @@ export default async function DashboardPage({
         {/* Header row */}
         <div className="flex items-center justify-between mb-8">
           <div>
-            <h1 className="text-2xl font-bold text-white">Audit History</h1>
+            <h1 className="text-2xl font-bold text-white">My Sites</h1>
             <p className="text-gray-500 text-sm mt-1">
               {limit === Infinity
                 ? 'Unlimited audits'
@@ -165,8 +164,8 @@ export default async function DashboardPage({
           </div>
         )}
 
-        {/* Audit list */}
-        {jobs.length === 0 ? (
+        {/* Site groups */}
+        {groups.length === 0 ? (
           <div className="text-center py-20 border border-dark-500 rounded-2xl bg-dark-800">
             <div className="w-14 h-14 rounded-full bg-dark-600 flex items-center justify-center mx-auto mb-4">
               <svg className="w-7 h-7 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -185,87 +184,14 @@ export default async function DashboardPage({
           </div>
         ) : (
           <div className="space-y-3">
-            {jobs.map((job: Record<string, unknown> & { id: string; url: string; status: string; depth: string; created_at: string; audit_reports: unknown; error_message?: string }) => {
-              const report = Array.isArray(job.audit_reports) ? job.audit_reports[0] : job.audit_reports
-              const statusColor = getStatusColor(job.status)
-
-              return (
-                <div
-                  key={job.id}
-                  className="rounded-xl border border-dark-500 bg-dark-800 p-5 hover:border-dark-400 transition-colors"
-                >
-                  <div className="flex items-start justify-between gap-4">
-                    {/* Left */}
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2 mb-1">
-                        <div
-                          className="w-2 h-2 rounded-full flex-shrink-0"
-                          style={{ backgroundColor: statusColor }}
-                        />
-                        <span className="text-xs font-mono text-gray-500 capitalize">{job.status}</span>
-                        <span className="text-gray-700">·</span>
-                        <span className="text-xs font-mono text-gray-500 capitalize">{job.depth}</span>
-                      </div>
-                      <div className="font-mono text-sm text-neon-green truncate mb-1">{job.url}</div>
-                      <div className="text-xs text-gray-500">
-                        {new Date(job.created_at).toLocaleDateString('en-GB', {
-                          day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit'
-                        })}
-                      </div>
-                    </div>
-
-                    {/* Right — score or status */}
-                    <div className="flex items-center gap-4 flex-shrink-0">
-                      {report && job.status === 'complete' ? (
-                        <div className="text-right">
-                          <div
-                            className="font-mono-brand font-bold text-2xl"
-                            style={{ color: getScoreColor(report.ship_score) }}
-                          >
-                            {report.ship_score}
-                          </div>
-                          <div
-                            className="text-xs font-mono font-bold"
-                            style={{ color: getVerdictColor(report.ship_verdict) }}
-                          >
-                            {getVerdictLabel(report.ship_verdict)}
-                          </div>
-                        </div>
-                      ) : job.status === 'running' ? (
-                        <div className="flex items-center gap-2 text-xs text-gray-500">
-                          <svg className="w-4 h-4 animate-spin text-blue-400" fill="none" viewBox="0 0 24 24">
-                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
-                          </svg>
-                          Running...
-                        </div>
-                      ) : job.status === 'failed' ? (
-                        <div className="text-xs text-red-400 font-mono">Failed</div>
-                      ) : (
-                        <div className="text-xs text-gray-500 font-mono">Queued</div>
-                      )}
-
-                      {/* View report link */}
-                      {job.status === 'complete' && report ? (
-                        <Link
-                          href={`/report/${job.id}`}
-                          className="px-3 py-1.5 border border-dark-400 text-xs text-gray-300 rounded-lg hover:border-neon-green hover:text-neon-green transition-colors font-mono"
-                        >
-                          View report
-                        </Link>
-                      ) : job.status === 'queued' || job.status === 'running' ? (
-                        <Link
-                          href={`/audit/${job.id}/status`}
-                          className="px-3 py-1.5 border border-dark-400 text-xs text-gray-300 rounded-lg hover:border-blue-400 hover:text-blue-400 transition-colors font-mono"
-                        >
-                          Check status
-                        </Link>
-                      ) : null}
-                    </div>
-                  </div>
-                </div>
-              )
-            })}
+            {groups.map((group, i) => (
+              <SiteGroup
+                key={group.url}
+                url={group.url}
+                audits={group.audits}
+                defaultOpen={i === 0}
+              />
+            ))}
           </div>
         )}
       </div>
