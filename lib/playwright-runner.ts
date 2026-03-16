@@ -53,12 +53,15 @@ export type PlaywrightResults = {
   }>
   brokenLinks: BrokenLink[]
   consoleErrors: ConsoleMessage[]
+  cspViolations: ConsoleMessage[]   // CSP enforcement messages — not app defects
   networkFailures: NetworkRequest[]
   screenshots: PlaywrightScreenshot[]
   pagesVisited: string[]
   httpResponses: Array<{ url: string; status: number; method: string }>
   pageTitle?: string
   loadTimeMs?: number
+  detectedCsp?: string | null       // Raw CSP value if present
+  hasStrictCsp: boolean             // True if app has CSP headers
   error?: string
 }
 
@@ -72,11 +75,19 @@ export async function runPlaywrightAudit(options: PlaywrightOptions): Promise<Pl
     functionalIssues: [],
     brokenLinks: [],
     consoleErrors: [],
+    cspViolations: [],
     networkFailures: [],
     screenshots: [],
     pagesVisited: [],
     httpResponses: [],
+    hasStrictCsp: false,
+    detectedCsp: null,
   }
+
+  // ---- Probe security headers before launching browser ----
+  const { hasStrictCsp, cspValue } = await probeSecurityHeaders(url)
+  results.hasStrictCsp = hasStrictCsp
+  results.detectedCsp = cspValue
 
   let browser: Browser | null = null
 
@@ -107,11 +118,19 @@ export async function runPlaywrightAudit(options: PlaywrightOptions): Promise<Pl
     // ---- Capture console messages ----
     page.on('console', (msg) => {
       if (['error', 'warning'].includes(msg.type())) {
-        results.consoleErrors.push({
-          type: msg.type(),
-          text: msg.text(),
-          location: msg.location()?.url,
-        })
+        const text = msg.text()
+        const isCspViolation =
+          text.includes('Content Security Policy') ||
+          text.includes('violated directive') ||
+          text.includes('frame-ancestors') ||
+          text.includes('content-security-policy')
+
+        const entry = { type: msg.type(), text, location: msg.location()?.url }
+        if (isCspViolation) {
+          results.cspViolations.push(entry)
+        } else {
+          results.consoleErrors.push(entry)
+        }
       }
     })
 
@@ -163,7 +182,7 @@ export async function runPlaywrightAudit(options: PlaywrightOptions): Promise<Pl
 
     try {
       const response = await page.goto(url, {
-        waitUntil: 'networkidle',
+        waitUntil: hasStrictCsp ? 'domcontentloaded' : 'networkidle',
         timeout: Math.min(30000, deadline - Date.now()),
       })
 
@@ -298,6 +317,28 @@ export async function runPlaywrightAudit(options: PlaywrightOptions): Promise<Pl
   }
 
   return results
+}
+
+async function probeSecurityHeaders(url: string): Promise<{ hasStrictCsp: boolean; cspValue: string | null }> {
+  try {
+    const response = await fetch(url, {
+      method: 'HEAD',
+      signal: AbortSignal.timeout(8000),
+      redirect: 'follow',
+    })
+    const csp = response.headers.get('content-security-policy') || response.headers.get('content-security-policy-report-only')
+    if (!csp) return { hasStrictCsp: false, cspValue: null }
+
+    const hasStrictCsp =
+      csp.includes('frame-ancestors') ||
+      csp.includes("default-src 'none'") ||
+      csp.includes("default-src 'self'") ||
+      csp.includes("script-src 'none'")
+
+    return { hasStrictCsp, cspValue: csp }
+  } catch {
+    return { hasStrictCsp: false, cspValue: null }
+  }
 }
 
 async function checkInteractiveElements(page: Page, results: PlaywrightResults) {

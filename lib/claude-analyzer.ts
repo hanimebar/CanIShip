@@ -40,7 +40,9 @@ Rules:
 - Be specific: name the exact element, URL, or metric that has the issue.
 - Severity must be accurate: "critical" means the app is broken or users will be blocked. "high" means significant UX harm. "medium" is a real issue but not a showstopper. "low" is good-to-fix.
 - The overall_score should reflect actual findings: 90+ only if the app is genuinely production-ready.
-- ship_verdict: "yes" if score >= 85 and no critical bugs; "no" if score < 50 or critical bugs exist; "conditional" otherwise.`
+- ship_verdict: "yes" if score >= 85 and no critical bugs; "no" if score < 50 or critical bugs exist; "conditional" otherwise.
+- CRITICAL: Strict Content Security Policy (CSP) headers like frame-ancestors 'none' or script-src 'self' are SECURITY BEST PRACTICES. Never penalize an app for having strict CSP headers. If the audit data contains a "hasStrictCsp" or CSP-enforcement notes, treat them as positive security signals and add them to passed_checks instead.
+- CRITICAL: Console messages about CSP violations, blocked frames, or refused resources caused by the app's own CSP are NOT app defects. They are the security policy working correctly. Never include these in critical_bugs, ux_issues, or security_flags.`
 
   const userPrompt = buildUserPrompt(input)
 
@@ -93,8 +95,12 @@ function buildUserPrompt(input: ClaudeAnalyzerInput): string {
 **Flows to check**: ${flows.length > 0 ? flows.join(', ') : 'General navigation and core functionality'}`)
 
   // Playwright results
-  sections.push(`## Functional Test Results (Playwright)
+  const cspNote = playwrightResults.hasStrictCsp
+    ? `\n⚠️ IMPORTANT — STRICT CSP DETECTED: This app has a Content Security Policy header (${playwrightResults.detectedCsp?.slice(0, 120) || 'present'}). This is a GOOD security practice, not a defect. Do NOT penalize the app for having strict CSP headers. Any CSP-related console messages or blocked resource errors below are caused by the test environment, NOT by bugs in the app. Do not include them as issues in your report.`
+    : ''
 
+  sections.push(`## Functional Test Results (Playwright)
+${cspNote}
 **Pages visited**: ${playwrightResults.pagesVisited.join(', ') || 'None'}
 **Load time**: ${playwrightResults.loadTimeMs ? `${playwrightResults.loadTimeMs}ms` : 'N/A'}
 **Page title**: ${playwrightResults.pageTitle || 'N/A'}
@@ -109,9 +115,14 @@ ${playwrightResults.brokenLinks.map((l) =>
   `- ${l.href} → HTTP ${l.status}`
 ).join('\n') || 'None'}
 
-**Console errors (${playwrightResults.consoleErrors.length})**:
+**Console errors (${playwrightResults.consoleErrors.length})** (these are real app errors):
 ${playwrightResults.consoleErrors.slice(0, 10).map((e) =>
   `- [${e.type}] ${e.text}${e.location ? ` (${e.location})` : ''}`
+).join('\n') || 'None'}
+
+**CSP enforcement messages (${playwrightResults.cspViolations?.length ?? 0})** (these are security headers working correctly — NOT app bugs):
+${(playwrightResults.cspViolations ?? []).slice(0, 5).map((e) =>
+  `- [${e.type}] ${e.text}`
 ).join('\n') || 'None'}
 
 **Network failures (${playwrightResults.networkFailures.length})**:
@@ -170,6 +181,7 @@ ${lighthouseResults.error ? `**Runner error**: ${lighthouseResults.error}` : ''}
 **HTTPS**: ${securityResults.isHttps ? 'Yes' : 'No — CRITICAL'}
 **Mixed content**: ${securityResults.hasMixedContent ? 'Yes — ISSUE' : 'No'}
 **Security score**: ${securityResults.score}/100
+**Strict CSP detected**: ${playwrightResults.hasStrictCsp ? `Yes — STRONG SECURITY POSTURE. Raw header: ${playwrightResults.detectedCsp?.slice(0, 200) || 'present'}` : 'No'}
 
 **Security flags (${securityResults.flags.length})**:
 ${securityResults.flags.map((f) =>
