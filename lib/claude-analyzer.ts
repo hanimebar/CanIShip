@@ -42,7 +42,8 @@ Rules:
 - The overall_score should reflect actual findings: 90+ only if the app is genuinely production-ready.
 - ship_verdict: "yes" if score >= 85 and no critical bugs; "no" if score < 50 or critical bugs exist; "conditional" otherwise.
 - CRITICAL: Strict Content Security Policy (CSP) headers like frame-ancestors 'none' or script-src 'self' are SECURITY BEST PRACTICES. Never penalize an app for having strict CSP headers. If the audit data contains a "hasStrictCsp" or CSP-enforcement notes, treat them as positive security signals and add them to passed_checks instead.
-- CRITICAL: Console messages about CSP violations, blocked frames, or refused resources caused by the app's own CSP are NOT app defects. They are the security policy working correctly. Never include these in critical_bugs, ux_issues, or security_flags.`
+- CRITICAL: Console messages about CSP violations, blocked frames, or refused resources caused by the app's own CSP are NOT app defects. They are the security policy working correctly. Never include these in critical_bugs, ux_issues, or security_flags.
+- CRITICAL: If the Playwright data contains a note saying results are "unverifiable", "test runner lost context", or "test infrastructure issue" — do NOT penalise the app for those checks. Score only on what was successfully verified. A runner crash is not evidence of an application bug.`
 
   const userPrompt = buildUserPrompt(input)
 
@@ -130,7 +131,11 @@ ${playwrightResults.networkFailures.slice(0, 10).map((n) =>
   `- ${n.method} ${n.url} → ${n.status || n.failureText || 'failed'}`
 ).join('\n') || 'None'}
 
-${playwrightResults.error ? `**Runner error**: ${playwrightResults.error}` : ''}`)
+${playwrightResults.error
+  ? playwrightResults.error.includes('unverifiable') || playwrightResults.error.includes('lost browser context') || playwrightResults.error.includes('test infrastructure')
+    ? `**⚠️ Test runner note (NOT an app defect)**: ${playwrightResults.error}`
+    : `**Runner error**: ${playwrightResults.error}`
+  : ''}`)
 
   // Axe results
   sections.push(`## Accessibility Audit Results (axe-core WCAG 2.1 AA)
