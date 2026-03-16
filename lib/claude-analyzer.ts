@@ -8,6 +8,8 @@ import type { PlaywrightResults } from './playwright-runner'
 import type { AxeResults } from './axe-runner'
 import type { LighthouseResults } from './lighthouse-runner'
 import type { SecurityResults } from './security-checker'
+import type { SeoResults } from './seo-checker'
+import type { MobileResults } from './mobile-runner'
 import type { ClaudeReport } from './supabase'
 
 const MODEL = 'claude-sonnet-4-20250514'
@@ -20,6 +22,8 @@ export type ClaudeAnalyzerInput = {
   axeResults: AxeResults
   lighthouseResults: LighthouseResults
   securityResults: SecurityResults
+  seoResults: SeoResults
+  mobileResults: MobileResults
   screenshots: Array<{ filename: string; storage_path: string; step_label: string }>
 }
 
@@ -87,7 +91,7 @@ Rules:
 }
 
 function buildUserPrompt(input: ClaudeAnalyzerInput): string {
-  const { url, description, flows, playwrightResults, axeResults, lighthouseResults, securityResults } = input
+  const { url, description, flows, playwrightResults, axeResults, lighthouseResults, securityResults, seoResults, mobileResults } = input
 
   const sections: string[] = []
 
@@ -202,6 +206,46 @@ ${Object.entries(securityResults.headers).map(([h, v]) =>
 ).join('\n')}
 
 ${securityResults.error ? `**Runner error**: ${securityResults.error}` : ''}`)
+
+  // SEO results
+  sections.push(`## SEO Audit Results
+
+**Title**: ${seoResults.title ? `"${seoResults.title}" (${seoResults.titleLength} chars)` : 'MISSING'}
+**Meta description**: ${seoResults.description ? `"${seoResults.description.slice(0, 100)}…" (${seoResults.descriptionLength} chars)` : 'MISSING'}
+**Canonical URL**: ${seoResults.hasCanonical ? seoResults.canonical : 'MISSING'}
+**Language attribute**: ${seoResults.hasLangAttribute ? seoResults.lang : 'MISSING'}
+**H1 headings**: ${seoResults.h1Count} found${seoResults.h1Text.length > 0 ? ` — "${seoResults.h1Text[0]}"` : ''}
+**Open Graph**: title=${seoResults.openGraph.title ? 'present' : 'MISSING'}, description=${seoResults.openGraph.description ? 'present' : 'MISSING'}, image=${seoResults.openGraph.image ? 'present' : 'MISSING'}
+**Twitter Card**: ${seoResults.twitterCard.card ? seoResults.twitterCard.card : 'MISSING'}
+**robots.txt**: ${seoResults.hasRobotsTxt ? 'Found' : 'NOT FOUND'}
+**sitemap.xml**: ${seoResults.hasSitemap ? 'Found' : 'NOT FOUND'}
+**Images without alt**: ${seoResults.imagesWithoutAlt}
+**SEO score**: ${seoResults.score}/100
+
+**SEO issues found (${seoResults.issues.length})**:
+${seoResults.issues.map((i) =>
+  `- [${i.severity.toUpperCase()}] ${i.title}: ${i.description}
+    Fix: ${i.remediation}`
+).join('\n') || 'None'}
+
+${seoResults.error ? `**Runner error**: ${seoResults.error}` : ''}`)
+
+  // Mobile results
+  sections.push(`## Mobile Audit Results (375px iPhone viewport)
+
+**Viewport meta tag**: ${mobileResults.hasViewportMeta ? `Present — "${mobileResults.viewportContent}"` : 'MISSING'}
+**Horizontal scroll**: ${mobileResults.hasHorizontalScroll ? `YES — content ${mobileResults.scrollWidth}px wide vs ${mobileResults.clientWidth}px viewport` : 'None detected'}
+**Touch targets tested**: ${mobileResults.tapTargetsTested}
+**Undersized touch targets (<44×44px)**: ${mobileResults.smallTouchTargets.length}${mobileResults.smallTouchTargets.length > 0 ? ` — e.g. ${mobileResults.smallTouchTargets[0].selector} (${mobileResults.smallTouchTargets[0].width}×${mobileResults.smallTouchTargets[0].height}px)` : ''}
+**Mobile score**: ${mobileResults.score}/100
+
+**Mobile issues found (${mobileResults.issues.length})**:
+${mobileResults.issues.map((i) =>
+  `- [${i.severity.toUpperCase()}] ${i.title}: ${i.description}
+    Fix: ${i.remediation}`
+).join('\n') || 'None'}
+
+${mobileResults.error ? `**Runner error**: ${mobileResults.error}` : ''}`)
 
   sections.push(`---
 

@@ -98,6 +98,10 @@ async function runAuditPipeline(job: AuditJob) {
   // eslint-disable-next-line @typescript-eslint/no-require-imports
   const { runSecurityChecks } = require(/* webpackIgnore: true */ `${runnerDir}/security-checker`)
   // eslint-disable-next-line @typescript-eslint/no-require-imports
+  const { runSeoChecks } = require(/* webpackIgnore: true */ `${runnerDir}/seo-checker`)
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
+  const { runMobileAudit } = require(/* webpackIgnore: true */ `${runnerDir}/mobile-runner`)
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
   const { analyzeWithClaude } = require(/* webpackIgnore: true */ `${runnerDir}/claude-analyzer`)
   // eslint-disable-next-line @typescript-eslint/no-require-imports
   const { generateReport } = require(/* webpackIgnore: true */ `${runnerDir}/report-generator`)
@@ -132,6 +136,12 @@ async function runAuditPipeline(job: AuditJob) {
 
   const securityResults = await runSecurityChecks({ url: job.url })
 
+  // SEO and mobile run in parallel — both are fast and independent
+  const [seoResults, mobileResults] = await Promise.all([
+    runSeoChecks({ url: job.url }),
+    runMobileAudit({ url: job.url, deadline }),
+  ])
+
   if (screenshots.length > 0) {
     await supabase.from('screenshots').insert(
       screenshots.map((s) => ({
@@ -151,6 +161,8 @@ async function runAuditPipeline(job: AuditJob) {
     axeResults,
     lighthouseResults,
     securityResults,
+    seoResults,
+    mobileResults,
     screenshots,
   })
 

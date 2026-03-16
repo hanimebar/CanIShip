@@ -67,6 +67,8 @@ const auditLayers = [
   { color: '#0A84FF', label: 'Performance (Core Web Vitals)', detail: 'Lighthouse LCP, CLS, FCP — against real targets' },
   { color: '#CC0000', label: 'Security Surface Scan', detail: 'Missing headers, HTTPS issues, exposed data in source' },
   { color: '#FFD60A', label: 'Broken Links + Network', detail: "Every link checked, every API call logged — silent 500s don't hide" },
+  { color: '#34C759', label: 'SEO Health', detail: 'Title, meta, Open Graph, sitemap, robots.txt — everything search engines need' },
+  { color: '#5E5CE6', label: 'Mobile Readiness', detail: 'Viewport meta, horizontal scroll, touch targets at 375px — real iPhone behaviour' },
 ]
 
 export default async function LandingPage() {
@@ -224,10 +226,10 @@ export default async function LandingPage() {
       <section className="px-6 py-16">
         <div className="max-w-5xl mx-auto">
           <h2 className="text-3xl font-bold text-center mb-3">
-            Six audit layers. One report.
+            Eight audit layers. One report.
           </h2>
           <p className="text-gray-400 text-center mb-12 max-w-xl mx-auto">
-            Every CanIShip audit runs all six QA layers in sequence — the same checks a senior engineer would run before releasing.
+            Every CanIShip audit runs all eight QA layers in sequence — the same checks a senior engineer would run before releasing.
           </p>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -378,6 +380,8 @@ export default async function LandingPage() {
                   { label: 'OWASP headers', detail: 'OWASP recommended security headers — CSP, HSTS, X-Frame-Options and more', color: '#CC0000' },
                   { label: 'Playwright functional', detail: 'End-to-end browser automation — the same engine used at Microsoft and Meta', color: '#FF9500' },
                   { label: 'axe-core', detail: 'The accessibility engine behind Deque, Google Lighthouse, and Microsoft accessibility tools', color: '#7CFF5A' },
+                  { label: 'SEO best practices', detail: 'Title, meta description, Open Graph, canonical, sitemap, robots.txt — everything search engines need', color: '#34C759' },
+                  { label: 'Mobile / WCAG 2.5.5', detail: 'Real iPhone viewport (375px) — viewport meta, horizontal scroll, touch target sizes', color: '#5E5CE6' },
                 ].map(({ label, detail, color }) => (
                   <div key={label} className="flex items-start gap-3 py-2.5 border-b border-dark-700 last:border-0">
                     <div className="w-1.5 h-1.5 rounded-full flex-shrink-0 mt-1.5" style={{ backgroundColor: color }} />
@@ -411,7 +415,7 @@ export default async function LandingPage() {
                       <div className="text-sm font-semibold text-white mb-1">What it covers</div>
                       <div className="text-xs text-gray-400 leading-relaxed">
                         Functional navigation, WCAG 2.1 AA accessibility, Core Web Vitals, OWASP security headers,
-                        broken links, console errors, and mobile layout — in one run.
+                        broken links, console errors, SEO health (meta, OG, sitemap), and mobile readiness (375px viewport, touch targets) — eight layers in one run.
                       </div>
                     </div>
                   </div>
@@ -518,11 +522,13 @@ export default async function LandingPage() {
               <h4 className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">Standards used</h4>
               <ul className="space-y-2 text-xs text-gray-600">
                 <li>WCAG 2.1 AA</li>
+                <li>WCAG 2.5.5 (touch targets)</li>
                 <li>Google Lighthouse</li>
                 <li>Core Web Vitals</li>
                 <li>OWASP Security Headers</li>
                 <li>axe-core (Deque)</li>
                 <li>Playwright</li>
+                <li>SEO best practices</li>
               </ul>
             </div>
 
