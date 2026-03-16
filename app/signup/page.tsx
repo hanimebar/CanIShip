@@ -46,14 +46,19 @@ export default function SignupPage() {
   }
 
   async function handleOAuth(provider: 'google' | 'github') {
+    setError('')
     setOauthLoading(provider)
     const supabase = createSupabaseBrowserClient()
-    await supabase.auth.signInWithOAuth({
+    const { error: oauthError } = await supabase.auth.signInWithOAuth({
       provider,
       options: {
         redirectTo: `${window.location.origin}/auth/callback`,
       },
     })
+    if (oauthError) {
+      setError(oauthError.message)
+      setOauthLoading(null)
+    }
   }
 
   if (success) {
