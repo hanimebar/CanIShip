@@ -26,5 +26,7 @@ export async function POST(req: NextRequest) {
 
   await supabase.auth.signOut()
 
-  return NextResponse.redirect(new URL('/', req.url))
+  const host = req.headers.get('x-forwarded-host') || req.headers.get('host') || 'caniship.actvli.com'
+  const proto = req.headers.get('x-forwarded-proto') || 'https'
+  return NextResponse.redirect(new URL('/', `${proto}://${host}`))
 }

@@ -93,6 +93,9 @@ export default async function DashboardPage({
           </Link>
           <div className="flex items-center gap-4">
             <span className="text-xs font-mono text-gray-500 capitalize">{plan} plan</span>
+            <Link href="/settings" className="text-sm text-gray-400 hover:text-white transition-colors">
+              Settings
+            </Link>
             <form action="/api/auth/signout" method="POST">
               <button type="submit" className="text-sm text-gray-400 hover:text-white transition-colors">
                 Sign out
