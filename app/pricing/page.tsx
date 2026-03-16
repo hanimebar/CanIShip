@@ -11,7 +11,7 @@ const plans = [
     period: 'forever',
     description: 'Try it out. No credit card, no commitment.',
     features: [
-      { text: '1 audit per month', included: true },
+      { text: '3 audits per month', included: true },
       { text: 'Quick Scan only (~5 min)', included: true },
       { text: 'Basic report (bugs, console errors)', included: true },
       { text: 'Broken link detection', included: true },

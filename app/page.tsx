@@ -133,7 +133,7 @@ export default function LandingPage() {
             </Link>
           </div>
 
-          <p className="text-xs text-gray-600 mt-4">No credit card required · 1 free audit/month</p>
+          <p className="text-xs text-gray-600 mt-4">No credit card required · 3 free audits/month</p>
         </div>
       </section>
 
@@ -256,7 +256,7 @@ export default function LandingPage() {
                 name: 'Free',
                 price: '€0',
                 period: 'forever',
-                features: ['1 audit/month', 'Quick Scan only', 'Basic report'],
+                features: ['3 audits/month', 'Quick Scan only', 'Basic report'],
                 cta: 'Start free',
                 href: '/signup',
                 highlight: false,
