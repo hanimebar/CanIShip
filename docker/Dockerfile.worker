@@ -51,4 +51,4 @@ COPY tsconfig.json ./
 ENV PLAYWRIGHT_BROWSERS_PATH=/root/.cache/ms-playwright
 ENV NODE_ENV=production
 
-CMD ["node", "--require", "tsx/cjs", "scripts/run-worker.js"]
+CMD ["node_modules/.bin/tsx", "scripts/run-worker.js"]
