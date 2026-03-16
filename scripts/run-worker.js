@@ -7,10 +7,6 @@
  * Required for production: long-running audits should not block API routes.
  */
 
-// Load environment variables
-require('dotenv').config({ path: '.env.local' })
-require('dotenv').config({ path: '.env' })
-
 async function main() {
   console.log('[CanIShip Worker] Starting...')
   console.log('[CanIShip Worker] Mode:', process.env.REDIS_URL ? 'BullMQ (Redis)' : 'Supabase polling')
