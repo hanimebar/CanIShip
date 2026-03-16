@@ -7,8 +7,15 @@ export const metadata: Metadata = {
     'Bulletproof QA in minutes. Functional tests, accessibility, performance, security — all in one audit. Get your ShipScore and ship with confidence.',
   keywords: ['QA', 'quality assurance', 'app testing', 'accessibility', 'performance', 'solo builders'],
   icons: {
-    icon: '/favicon.svg',
-    apple: '/icons/apple-touch-icon.svg',
+    icon: [
+      { url: '/favicon-16.png', sizes: '16x16', type: 'image/png' },
+      { url: '/favicon-32.png', sizes: '32x32', type: 'image/png' },
+      { url: '/favicon.svg', type: 'image/svg+xml' },
+    ],
+    apple: '/icons/apple-touch-icon.png',
+    other: [
+      { rel: 'icon', url: '/icon-64.png', sizes: '64x64' },
+    ],
   },
   openGraph: {
     title: 'CanIShip — Can Your App Ship?',

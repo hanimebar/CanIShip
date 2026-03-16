@@ -1,4 +1,7 @@
 import Link from 'next/link'
+import Image from 'next/image'
+import { cookies } from 'next/headers'
+import { createServerClient } from '@supabase/ssr'
 
 const differentiators = [
   {
@@ -66,29 +69,54 @@ const auditLayers = [
   { color: '#FFD60A', label: 'Broken Links + Network', detail: "Every link checked, every API call logged — silent 500s don't hide" },
 ]
 
-export default function LandingPage() {
+export default async function LandingPage() {
+  // Check auth state server-side so nav reflects login status
+  const cookieStore = cookies()
+  const supabase = createServerClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    { cookies: { get: (name) => cookieStore.get(name)?.value } }
+  )
+  const { data: { user } } = await supabase.auth.getUser()
+
   return (
     <div className="min-h-screen bg-dark-900 text-white">
 
       {/* Nav */}
       <nav className="border-b border-dark-600 px-6 py-4">
         <div className="max-w-6xl mx-auto flex items-center justify-between">
-          <div className="font-mono-brand font-bold text-neon-green text-xl tracking-tight">
-            CanIShip
-          </div>
+          <Link href="/" className="flex items-center">
+            <Image src="/logo.svg" alt="CanIShip" width={160} height={36} priority />
+          </Link>
           <div className="flex items-center gap-6">
             <Link href="/pricing" className="text-sm text-gray-400 hover:text-white transition-colors">
               Pricing
             </Link>
-            <Link href="/login" className="text-sm text-gray-400 hover:text-white transition-colors">
-              Login
-            </Link>
-            <Link
-              href="/signup"
-              className="px-4 py-2 bg-neon-green text-dark-900 font-bold text-sm rounded-lg hover:bg-neon-green-dim transition-colors font-mono-brand"
-            >
-              Get started free
-            </Link>
+            {user ? (
+              <>
+                <Link href="/dashboard" className="text-sm text-gray-400 hover:text-white transition-colors">
+                  Dashboard
+                </Link>
+                <Link
+                  href="/audit/new"
+                  className="px-4 py-2 bg-neon-green text-dark-900 font-bold text-sm rounded-lg hover:bg-neon-green-dim transition-colors font-mono-brand"
+                >
+                  + New Audit
+                </Link>
+              </>
+            ) : (
+              <>
+                <Link href="/login" className="text-sm text-gray-400 hover:text-white transition-colors">
+                  Login
+                </Link>
+                <Link
+                  href="/signup"
+                  className="px-4 py-2 bg-neon-green text-dark-900 font-bold text-sm rounded-lg hover:bg-neon-green-dim transition-colors font-mono-brand"
+                >
+                  Get started free
+                </Link>
+              </>
+            )}
           </div>
         </div>
       </nav>

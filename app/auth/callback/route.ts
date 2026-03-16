@@ -5,6 +5,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createServerClient } from '@supabase/ssr'
 import { cookies } from 'next/headers'
+import { sendWelcomeEmail } from '@/lib/welcome-email'
 
 export const runtime = 'nodejs'
 
@@ -34,6 +35,20 @@ export async function GET(req: NextRequest) {
     )
 
     await supabase.auth.exchangeCodeForSession(code)
+
+    // Send welcome email for new users (created within the last 5 minutes)
+    try {
+      const { data: { user } } = await supabase.auth.getUser()
+      if (user?.email && user.created_at) {
+        const ageMs = Date.now() - new Date(user.created_at).getTime()
+        if (ageMs < 5 * 60 * 1000) {
+          const name = user.user_metadata?.full_name || user.user_metadata?.name || undefined
+          await sendWelcomeEmail(user.email, name)
+        }
+      }
+    } catch {
+      // Non-fatal — don't block redirect if email fails
+    }
   }
 
   const host = req.headers.get('x-forwarded-host') || req.headers.get('host') || 'caniship.actvli.com'
