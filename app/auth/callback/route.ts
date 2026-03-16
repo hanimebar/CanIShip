@@ -36,5 +36,7 @@ export async function GET(req: NextRequest) {
     await supabase.auth.exchangeCodeForSession(code)
   }
 
-  return NextResponse.redirect(new URL(next, req.url))
+  const host = req.headers.get('x-forwarded-host') || req.headers.get('host') || 'caniship.actvli.com'
+  const proto = req.headers.get('x-forwarded-proto') || 'https'
+  return NextResponse.redirect(new URL(next, `${proto}://${host}`))
 }
