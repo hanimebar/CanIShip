@@ -1,19 +1,19 @@
 /**
  * Standalone worker process
- * Run: node --require tsx/cjs scripts/run-worker.js
+ * Run: npx tsx scripts/run-worker.ts
  * Or:  npm run worker
  *
  * This runs the audit job processor independently of the Next.js app.
  * Required for production: long-running audits should not block API routes.
  */
 
+import { initBullMQWorker, startPollingWorker } from '../lib/job-queue'
+
 async function main() {
   console.log('[CanIShip Worker] Starting...')
   console.log('[CanIShip Worker] Mode:', process.env.REDIS_URL ? 'BullMQ (Redis)' : 'Supabase polling')
 
   try {
-    const { initBullMQWorker, startPollingWorker } = require('../lib/job-queue.ts')
-
     if (process.env.REDIS_URL) {
       await initBullMQWorker()
       console.log('[CanIShip Worker] BullMQ worker started. Waiting for jobs...')
