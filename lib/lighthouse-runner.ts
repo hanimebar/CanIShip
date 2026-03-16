@@ -80,12 +80,16 @@ export async function runLighthouseAudit(options: LighthouseOptions): Promise<Li
 
     const chrome = await launch({
       chromeFlags: [
-        '--headless',
+        '--headless=new',
         '--no-sandbox',
         '--disable-setuid-sandbox',
         '--disable-dev-shm-usage',
         '--disable-gpu',
-        '--single-process',
+        '--disable-extensions',
+        '--disable-component-extensions-with-background-pages',
+        // NOTE: --single-process is intentionally NOT included here.
+        // It prevents Chrome from spawning renderer processes that Lighthouse
+        // requires, causing silent failures in Docker/Railway environments.
       ],
     })
 

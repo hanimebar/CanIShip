@@ -64,13 +64,15 @@ export async function runAxeAudit(options: AxeOptions): Promise<AxeResults> {
   try {
     const page = await browser.newPage()
 
+    // Use domcontentloaded — networkidle can hang on sites with strict CSP
+    // (CSP blocks external resources that never resolve, so idle is never reached)
     await page.goto(url, {
-      waitUntil: 'networkidle',
+      waitUntil: 'domcontentloaded',
       timeout: Math.min(30000, deadline - Date.now()),
     })
 
-    // Wait for dynamic content
-    await page.waitForTimeout(2000)
+    // Brief pause for JS-rendered content
+    await page.waitForTimeout(1500)
 
     const axeBuilder = new AxeBuilder({ page })
       .withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa', 'best-practice'])
