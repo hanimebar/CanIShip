@@ -12,7 +12,7 @@ async function main() {
   console.log('[CanIShip Worker] Mode:', process.env.REDIS_URL ? 'BullMQ (Redis)' : 'Supabase polling')
 
   try {
-    const { initBullMQWorker, startPollingWorker } = await import('../lib/job-queue.ts')
+    const { initBullMQWorker, startPollingWorker } = require('../lib/job-queue.ts')
 
     if (process.env.REDIS_URL) {
       await initBullMQWorker()
