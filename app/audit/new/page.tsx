@@ -40,7 +40,7 @@ export default async function NewAuditPage({
     .single()
 
   const plan = profile?.plan || 'free'
-  const limits = { free: 3, builder: 20, studio: Infinity }
+  const limits = { free: 3, builder: 10, studio: Infinity }
   const limit = limits[plan as keyof typeof limits] ?? 3
   const used = profile?.audits_used_this_month ?? 0
   const atLimit = used >= limit && limit !== Infinity

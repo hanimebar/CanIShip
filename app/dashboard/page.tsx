@@ -60,7 +60,7 @@ export default async function DashboardPage({
   const jobs = jobsResult.data || []
   const profile = profileResult.data
 
-  const planLimits = { free: 3, builder: 20, studio: Infinity }
+  const planLimits = { free: 3, builder: 10, studio: Infinity }
   const plan = profile?.plan || 'free'
   const limit = planLimits[plan as keyof typeof planLimits] ?? 3
   const used = profile?.audits_used_this_month ?? 0
