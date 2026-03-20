@@ -139,7 +139,7 @@ export default async function LandingPage() {
                   lineHeight: 1.1,
                 }}
               >
-                Solo builders are shipping broken apps every day. Not because they are careless — because they are alone.
+                Solo builders ship underdeveloped products and get themselves into trouble.
               </h2>
               <p className="text-dock-300 text-base leading-relaxed mb-6 max-w-2xl">
                 CanIShip is an automated cargo inspection service for web applications. Paste your URL.
