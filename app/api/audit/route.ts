@@ -45,7 +45,7 @@ export async function POST(req: NextRequest) {
       .eq('id', user.id)
       .single()
 
-    const limits: Record<string, number> = { free: 3, builder: 10, studio: 99999 }
+    const limits: Record<string, number> = { free: 3, builder: 15, studio: 99999 }
     const plan = profile?.plan || 'free'
     const limit = limits[plan] ?? 3
 

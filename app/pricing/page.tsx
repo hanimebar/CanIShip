@@ -33,7 +33,7 @@ const plans = [
     period: '/month',
     description: 'For serious builders who ship regularly.',
     features: [
-      { text: '10 audits per month', included: true },
+      { text: '15 audits per month', included: true },
       { text: 'Quick, Standard, and Deep scans', included: true },
       { text: 'Full reports — every category', included: true },
       { text: 'Risk & Rewards analysis', included: true },
