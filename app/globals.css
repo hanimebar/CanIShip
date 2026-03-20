@@ -144,6 +144,29 @@ body {
 .issue-card-warning     { color: #B87300;  border-color: #B87300; }
 .issue-card-passed      { color: #2D6A2D;  border-color: #2D6A2D; }
 
+/* ─── Ship loader ──────────────────────────────────── */
+@keyframes shipRock {
+  0%, 100% { transform: rotate(-3deg) translateY(0px); }
+  50%       { transform: rotate(3deg)  translateY(-5px); }
+}
+@keyframes flagFlutter {
+  0%, 100% { transform: scaleX(1)    skewY(0deg); }
+  30%       { transform: scaleX(0.6) skewY(4deg); }
+  60%       { transform: scaleX(0.8) skewY(-2deg); }
+}
+@keyframes waveDrift {
+  0%, 100% { transform: translateX(0px); }
+  50%       { transform: translateX(-10px); }
+}
+@keyframes waveDrift2 {
+  0%, 100% { transform: translateX(-8px); }
+  50%       { transform: translateX(6px); }
+}
+@keyframes smokeRise {
+  0%   { opacity: 0.7; transform: translateY(0)    scale(1);   }
+  100% { opacity: 0;   transform: translateY(-14px) scale(1.8); }
+}
+
 /* ─── Animations ───────────────────────────────────── */
 @keyframes scoreIn {
   0%   { transform: scale(0.7); opacity: 0; }

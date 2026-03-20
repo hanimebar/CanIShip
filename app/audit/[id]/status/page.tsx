@@ -41,6 +41,93 @@ function getElapsed(startTime?: string): string {
   return `${Math.floor(elapsed / 60)}m ${elapsed % 60}s`
 }
 
+function ShipLoader({ status }: { status: string }) {
+  return (
+    <div className="relative mx-auto mb-8" style={{ width: 160, height: 110 }}>
+      {/* Rocking ship */}
+      <div style={{ animation: 'shipRock 3.2s ease-in-out infinite', transformOrigin: '50% 90%' }}>
+        <svg viewBox="0 0 100 78" width="160" height="124" aria-hidden>
+
+          {/* Smoke puffs from funnel */}
+          <circle cx="30" cy="14" r="3.5" fill="#33291D"
+            style={{ animation: 'smokeRise 2.2s ease-out infinite', transformOrigin: '30px 14px' }} />
+          <circle cx="32" cy="7" r="2.5" fill="#261E15"
+            style={{ animation: 'smokeRise 2.2s ease-out infinite 0.7s', transformOrigin: '32px 7px' }} />
+          <circle cx="28" cy="2" r="1.8" fill="#1A1510"
+            style={{ animation: 'smokeRise 2.2s ease-out infinite 1.4s', transformOrigin: '28px 2px' }} />
+
+          {/* Funnel */}
+          <rect x="26" y="20" width="9" height="13" rx="1" fill="#1A1510" stroke="#33291D" strokeWidth="0.5" />
+          <rect x="24" y="18" width="13" height="4" rx="1" fill="#4A3C2A" />
+
+          {/* Bridge / cabin */}
+          <rect x="14" y="28" width="26" height="16" rx="1.5" fill="#261E15" stroke="#4A3C2A" strokeWidth="0.6" />
+          {/* Bridge windows */}
+          <rect x="17" y="31" width="5" height="4" rx="0.8" fill="#F5A623" opacity="0.55" />
+          <rect x="24" y="31" width="5" height="4" rx="0.8" fill="#F5A623" opacity="0.35" />
+          <rect x="31" y="31" width="5" height="4" rx="0.8" fill="#F5A623" opacity="0.2" />
+
+          {/* Mast */}
+          <rect x="20" y="10" width="2.5" height="20" rx="1" fill="#6B5540" />
+          {/* Flag — flutters around its left edge */}
+          <path
+            d="M22.5 10 L36 16 L22.5 22 Z"
+            fill="#F5A623"
+            style={{
+              transformBox: 'fill-box',
+              transformOrigin: 'left center',
+              animation: 'flagFlutter 1.8s ease-in-out infinite',
+            }}
+          />
+
+          {/* Cargo boxes */}
+          <rect x="42" y="32" width="16" height="12" rx="0.5" fill="#C4821A" stroke="#B87300" strokeWidth="0.5" />
+          <line x1="42" y1="38" x2="58" y2="38" stroke="#B87300" strokeWidth="0.5" opacity="0.6" />
+          <line x1="50" y1="32" x2="50" y2="44" stroke="#B87300" strokeWidth="0.5" opacity="0.6" />
+
+          <rect x="60" y="32" width="16" height="12" rx="0.5" fill="#33291D" stroke="#4A3C2A" strokeWidth="0.5" />
+          <line x1="60" y1="38" x2="76" y2="38" stroke="#4A3C2A" strokeWidth="0.5" opacity="0.7" />
+
+          <rect x="78" y="36" width="10" height="8" rx="0.5" fill="#4A3C2A" stroke="#6B5540" strokeWidth="0.5" />
+
+          {/* Deck */}
+          <rect x="10" y="44" width="82" height="7" fill="#33291D" stroke="#4A3C2A" strokeWidth="0.5" />
+
+          {/* Hull */}
+          <path d="M6 51 L2 64 L96 64 L94 51 Z" fill="#1A1510" stroke="#4A3C2A" strokeWidth="0.8" />
+          {/* Hull waterline stripe */}
+          <path d="M5 57 L3 64 L95 64 L95 57 Z" fill="#261E15" />
+          {/* Bow highlight */}
+          <path d="M90 51 L94 51 L93 57" fill="#33291D" />
+        </svg>
+      </div>
+
+      {/* Animated waves */}
+      <div className="absolute bottom-0 left-0 right-0 overflow-hidden" style={{ height: 20 }}>
+        <svg viewBox="0 0 160 20" width="160" height="20" aria-hidden>
+          <path
+            d="M0 12 Q20 6 40 12 Q60 18 80 12 Q100 6 120 12 Q140 18 160 12"
+            fill="none" stroke="#4A3C2A" strokeWidth="1.8"
+            style={{ animation: 'waveDrift 2.4s ease-in-out infinite' }}
+          />
+          <path
+            d="M0 16 Q20 10 40 16 Q60 22 80 16 Q100 10 120 16 Q140 22 160 16"
+            fill="none" stroke="#33291D" strokeWidth="1.2"
+            style={{ animation: 'waveDrift2 3s ease-in-out infinite' }}
+          />
+        </svg>
+      </div>
+
+      {/* Status badge */}
+      <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 whitespace-nowrap">
+        <span className="stamp stamp-amber text-[0.6rem] px-2 py-0.5" style={{ transform: 'rotate(-1.5deg)' }}>
+          {status === 'queued' ? 'AWAITING BERTH' : 'UNDER INSPECTION'}
+        </span>
+      </div>
+    </div>
+  )
+}
+
 export default function AuditStatusPage() {
   const router = useRouter()
   const params = useParams()
@@ -188,25 +275,7 @@ export default function AuditStatusPage() {
         ) : (
           /* Running / queued state */
           <div>
-            {/* Spinner */}
-            <div className="relative w-24 h-24 mx-auto mb-8">
-              <svg className="w-full h-full -rotate-90 animate-spin" style={{ animationDuration: '2s' }} viewBox="0 0 96 96">
-                <circle cx="48" cy="48" r="40" fill="none" stroke="#222222" strokeWidth="6" />
-                <circle
-                  cx="48" cy="48" r="40" fill="none" stroke="#00FF88" strokeWidth="6"
-                  strokeLinecap="round"
-                  strokeDasharray={`${2 * Math.PI * 40 * 0.25} ${2 * Math.PI * 40 * 0.75}`}
-                  style={{ filter: 'drop-shadow(0 0 6px #00FF8880)' }}
-                />
-              </svg>
-              <div className="absolute inset-0 flex items-center justify-center">
-                <div className="text-center">
-                  <div className="font-mono text-xs text-neon-green">
-                    {status === 'queued' ? 'QUEUED' : 'RUNNING'}
-                  </div>
-                </div>
-              </div>
-            </div>
+            <ShipLoader status={status || 'queued'} />
 
             <h2 className="text-xl font-bold text-white mb-3">
               {status === 'queued' ? 'Queued for processing' : 'Audit in progress'}
