@@ -88,8 +88,8 @@ export default async function DashboardPage({
       {/* Nav */}
       <nav className="border-b border-dark-600 px-6 py-4">
         <div className="max-w-6xl mx-auto flex items-center justify-between">
-          <Link href="/" className="font-mono-brand font-bold text-neon-green text-xl">
-            CanIShip
+          <Link href="/">
+            <img src="/logo.svg" alt="CanIShip" height={32} style={{ height: 32, width: 'auto' }} />
           </Link>
           <div className="flex items-center gap-4">
             <span className="text-xs font-mono text-gray-500 capitalize">{plan} plan</span>

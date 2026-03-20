@@ -224,8 +224,8 @@ export default function AuditStatusPage() {
       <div className="max-w-md w-full text-center">
 
         {/* Logo */}
-        <div className="font-mono-brand font-bold text-neon-green text-xl mb-12">
-          CanIShip
+        <div className="mb-12 flex justify-center">
+          <img src="/logo.svg" alt="CanIShip" style={{ height: 36, width: 'auto' }} />
         </div>
 
         {status === 'complete' ? (
