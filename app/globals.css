@@ -2,127 +2,173 @@
 @tailwind components;
 @tailwind utilities;
 
-@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=Inter:wght@400;500;600;700;800;900&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;0,900;1,400;1,700&family=Special+Elite&family=Barlow+Condensed:wght@400;600;700;900&display=swap');
 
 :root {
-  --background: #0A0A0A;
-  --foreground: #EDEDED;
-  --neon-green: #00FF88;
-  --neon-green-dim: #00C269;
+  --background:   #0F0C08;
+  --surface:      #1A1510;
+  --border:       #33291D;
+  --text-primary: #E8D5A3;
+  --text-secondary:#A08060;
+  --text-muted:   #6B5540;
+  --amber:        #F5A623;
+  --amber-dim:    #C4821A;
+  --stamp-red:    #CC2200;
+  --stamp-green:  #2D6A2D;
+  --stamp-amber:  #B87300;
 }
 
-* {
-  box-sizing: border-box;
-}
+* { box-sizing: border-box; }
 
-html {
-  scroll-behavior: smooth;
-}
+html { scroll-behavior: smooth; }
 
 body {
-  color: var(--foreground);
+  color: var(--text-primary);
   background: var(--background);
-  font-family: 'Inter', system-ui, sans-serif;
+  font-family: 'Special Elite', 'Courier New', monospace;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
 
-/* Scrollbar */
-::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
+/* ─── Scrollbar ────────────────────────────────────── */
+::-webkit-scrollbar        { width: 5px; height: 5px; }
+::-webkit-scrollbar-track  { background: #0F0C08; }
+::-webkit-scrollbar-thumb  { background: #4A3C2A; }
+::-webkit-scrollbar-thumb:hover { background: #F5A623; }
+
+/* ─── Rule line ────────────────────────────────────── */
+.rule          { border-top: 1px solid var(--border); }
+.rule-thick    { border-top: 3px solid var(--dock-100, #E8D5A3); }
+.rule-amber    { border-top: 1px solid #F5A623; }
+.double-rule {
+  border-top: 3px double var(--text-primary);
 }
-::-webkit-scrollbar-track {
-  background: #111111;
+
+/* ─── Newspaper column grid ────────────────────────── */
+.col-grid-2 {
+  columns: 2;
+  column-gap: 2rem;
+  column-rule: 1px solid var(--border);
 }
-::-webkit-scrollbar-thumb {
-  background: #333333;
+.col-grid-3 {
+  columns: 3;
+  column-gap: 2rem;
+  column-rule: 1px solid var(--border);
+}
+
+/* ─── Stamp ────────────────────────────────────────── */
+.stamp {
+  display: inline-block;
+  padding: 0.35rem 0.9rem;
+  border: 3px solid currentColor;
   border-radius: 3px;
+  font-family: 'Barlow Condensed', 'Arial Narrow', sans-serif;
+  font-weight: 900;
+  font-size: 0.7rem;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  transform: rotate(-2.5deg);
+  opacity: 0.9;
 }
-::-webkit-scrollbar-thumb:hover {
-  background: #00FF88;
+.stamp-red   { color: var(--stamp-red);   border-color: var(--stamp-red); }
+.stamp-green { color: var(--stamp-green); border-color: var(--stamp-green); }
+.stamp-amber { color: var(--stamp-amber); border-color: var(--stamp-amber); }
+
+/* ─── Manifest row ─────────────────────────────────── */
+.manifest-row {
+  display: flex;
+  align-items: baseline;
+  gap: 0;
+  font-family: 'Special Elite', monospace;
+  font-size: 0.875rem;
+  color: var(--text-secondary);
+  padding: 0.5rem 0;
+  border-bottom: 1px dotted #33291D;
 }
-
-@layer utilities {
-  .text-balance {
-    text-wrap: balance;
-  }
-
-  .font-mono-brand {
-    font-family: 'JetBrains Mono', 'Fira Code', monospace;
-  }
-
-  /* Glow effects */
-  .glow-green {
-    box-shadow: 0 0 20px rgba(0, 255, 136, 0.3), 0 0 40px rgba(0, 255, 136, 0.1);
-  }
-  .glow-green-sm {
-    box-shadow: 0 0 8px rgba(0, 255, 136, 0.4);
-  }
-  .text-glow-green {
-    text-shadow: 0 0 20px rgba(0, 255, 136, 0.5);
-  }
-
-  /* Score colors */
-  .score-excellent { color: #00FF88; }
-  .score-good { color: #00C269; }
-  .score-ok { color: #FFD60A; }
-  .score-poor { color: #FF9500; }
-  .score-critical { color: #FF3B30; }
-
-  /* Card styles */
-  .issue-card {
-    @apply rounded-lg border p-4 mb-3;
-  }
-  .issue-card-critical {
-    @apply issue-card border-red-500/30 bg-red-500/5;
-  }
-  .issue-card-ux {
-    @apply issue-card border-orange-500/30 bg-orange-500/5;
-  }
-  .issue-card-accessibility {
-    @apply issue-card border-purple-500/30 bg-purple-500/5;
-  }
-  .issue-card-performance {
-    @apply issue-card border-blue-500/30 bg-blue-500/5;
-  }
-  .issue-card-security {
-    @apply issue-card border-red-900/50 bg-red-900/10;
-  }
-  .issue-card-warning {
-    @apply issue-card border-yellow-500/30 bg-yellow-500/5;
-  }
-  .issue-card-passed {
-    @apply issue-card border-green-500/30 bg-green-500/5;
-  }
+.manifest-row .field-name {
+  flex-shrink: 0;
+  color: var(--text-muted);
+  font-size: 0.7rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  font-family: 'Barlow Condensed', sans-serif;
+  width: 8rem;
+}
+.manifest-row .field-dots {
+  flex: 1;
+  border-bottom: 1px dotted #4A3C2A;
+  margin: 0 0.5rem;
+  margin-bottom: 3px;
+}
+.manifest-row .field-value {
+  flex-shrink: 0;
+  color: var(--text-primary);
 }
 
-/* Animations */
+/* ─── Score ────────────────────────────────────────── */
+.score-excellent { color: #4A8A4A; }
+.score-good      { color: #6B9A3A; }
+.score-ok        { color: #B87300; }
+.score-poor      { color: #C46000; }
+.score-critical  { color: #CC2200; }
+
+/* ─── Telex badge ──────────────────────────────────── */
+.telex {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.2rem 0.6rem;
+  background: transparent;
+  border: 1px solid var(--border);
+  font-family: 'Barlow Condensed', sans-serif;
+  font-size: 0.65rem;
+  font-weight: 700;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+/* ─── Issue cards ──────────────────────────────────── */
+.issue-card {
+  border-left: 3px solid currentColor;
+  padding: 0.75rem 1rem;
+  margin-bottom: 0.75rem;
+  background: #1A1510;
+  font-family: 'Special Elite', monospace;
+}
+.issue-card-critical    { color: #CC2200;  border-color: #CC2200; }
+.issue-card-ux          { color: #C46000;  border-color: #C46000; }
+.issue-card-accessibility{ color: #6B3FA0; border-color: #6B3FA0; }
+.issue-card-performance { color: #1A5C8A;  border-color: #1A5C8A; }
+.issue-card-security    { color: #8A1A1A;  border-color: #8A1A1A; }
+.issue-card-warning     { color: #B87300;  border-color: #B87300; }
+.issue-card-passed      { color: #2D6A2D;  border-color: #2D6A2D; }
+
+/* ─── Animations ───────────────────────────────────── */
 @keyframes scoreIn {
-  0% { transform: scale(0.5); opacity: 0; }
-  100% { transform: scale(1); opacity: 1; }
+  0%   { transform: scale(0.7); opacity: 0; }
+  100% { transform: scale(1);   opacity: 1; }
 }
-
+@keyframes stampIn {
+  0%   { transform: scale(1.4) rotate(-8deg); opacity: 0; }
+  100% { transform: scale(1)   rotate(-2.5deg); opacity: 1; }
+}
 @keyframes fadeUp {
-  0% { transform: translateY(20px); opacity: 0; }
-  100% { transform: translateY(0); opacity: 1; }
+  0%   { transform: translateY(12px); opacity: 0; }
+  100% { transform: translateY(0);    opacity: 1; }
 }
 
+.animate-score-in { animation: scoreIn 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) forwards; }
+.animate-stamp-in { animation: stampIn 0.25s cubic-bezier(0.22, 1, 0.36, 1) forwards; }
+.animate-fade-up  { animation: fadeUp 0.4s ease forwards; }
+
+/* ─── Skeleton ─────────────────────────────────────── */
 @keyframes shimmer {
-  0% { background-position: -1000px 0; }
-  100% { background-position: 1000px 0; }
+  0%   { background-position: -1000px 0; }
+  100% { background-position:  1000px 0; }
 }
-
-.animate-score-in {
-  animation: scoreIn 0.8s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
-}
-
-.animate-fade-up {
-  animation: fadeUp 0.5s ease forwards;
-}
-
 .skeleton {
-  background: linear-gradient(90deg, #1A1A1A 25%, #222222 50%, #1A1A1A 75%);
+  background: linear-gradient(90deg, #1A1510 25%, #261E15 50%, #1A1510 75%);
   background-size: 1000px 100%;
   animation: shimmer 2s infinite;
 }

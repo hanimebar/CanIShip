@@ -1,78 +1,29 @@
 import Link from 'next/link'
-import Image from 'next/image'
 import { cookies } from 'next/headers'
 import { createServerClient } from '@supabase/ssr'
 
-const differentiators = [
-  {
-    icon: (
-      <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
-      </svg>
-    ),
-    title: 'Zero setup',
-    description: 'No SDK, no browser extension, no CI/CD. Just paste a URL.',
-  },
-  {
-    icon: (
-      <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
-      </svg>
-    ),
-    title: 'Plain English in, plain English out',
-    description: 'Describe your app like a friend. Get a report you can actually act on.',
-  },
-  {
-    icon: (
-      <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-      </svg>
-    ),
-    title: 'Bulletproof QA, not vibes',
-    description: 'Functional tests, accessibility, performance, security, broken links — in one run.',
-  },
-  {
-    icon: (
-      <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
-      </svg>
-    ),
-    title: 'Risk + Rewards + Roadmap',
-    description: "Not just a bug list. What's working, what could blow up, and what to build next.",
-  },
-  {
-    icon: (
-      <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-      </svg>
-    ),
-    title: 'Built for solo builders',
-    description: "Not for QA teams. Not for enterprises. For people who ship alone and need an honest friend.",
-  },
-  {
-    icon: (
-      <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-      </svg>
-    ),
-    title: 'Priced for humans',
-    description: 'Not $500/month. Not enterprise pricing. From €19.',
-  },
+const auditLayers = [
+  { code: 'FT',  label: 'Functional Tests',            detail: 'Playwright navigates every declared flow. Unresponsive controls, dead ends, and broken redirects are logged with screenshot evidence.' },
+  { code: 'UX',  label: 'UX Friction',                 detail: 'Missing loading states, absent error messages, silent failures — friction that does not break the app but breaks the user.' },
+  { code: 'A11', label: 'Accessibility (WCAG 2.1 AA)', detail: 'axe-core injection across all pages. Violations are classified by severity with WCAG criterion reference and remediation.' },
+  { code: 'PF',  label: 'Performance (Core Web Vitals)',detail: 'Lighthouse against LCP, CLS, FCP, TBT, INP. Render-blocking resources, unoptimised assets, and Time to Interactive flagged.' },
+  { code: 'SEC', label: 'Security Surface',             detail: 'OWASP headers audit. Routes accessible without authentication. Sensitive data in source or URL. Mixed content and HTTPS enforcement.' },
+  { code: 'LNK', label: 'Broken Links & Network',      detail: 'Every internal href crawled. All network responses monitored via Playwright intercept — 4xx/5xx that the UI silently swallows.' },
+  { code: 'SEO', label: 'SEO Health',                  detail: 'Title, meta description, canonical, Open Graph, sitemap.xml, robots.txt — every signal search engines use to index or reject.' },
+  { code: 'MOB', label: 'Mobile Readiness',            detail: 'Real 375px viewport. Horizontal overflow, unclickable touch targets, missing viewport meta, and layout breaks at WCAG 2.5.5.' },
 ]
 
-const auditLayers = [
-  { color: '#FF3B30', label: 'Functional Tests', detail: 'Playwright navigates every flow and catches broken interactions' },
-  { color: '#FF9500', label: 'UX Issues', detail: 'Confusing flows, dead ends, missing states — caught and reported' },
-  { color: '#AF52DE', label: 'Accessibility (WCAG 2.1)', detail: 'axe-core injection catches every violation with severity rating' },
-  { color: '#0A84FF', label: 'Performance (Core Web Vitals)', detail: 'Lighthouse LCP, CLS, FCP — against real targets' },
-  { color: '#CC0000', label: 'Security Surface Scan', detail: 'Missing headers, HTTPS issues, exposed data in source' },
-  { color: '#FFD60A', label: 'Broken Links + Network', detail: "Every link checked, every API call logged — silent 500s don't hide" },
-  { color: '#34C759', label: 'SEO Health', detail: 'Title, meta, Open Graph, sitemap, robots.txt — everything search engines need' },
-  { color: '#5E5CE6', label: 'Mobile Readiness', detail: 'Viewport meta, horizontal scroll, touch targets at 375px — real iPhone behaviour' },
+const differentiatorsRows = [
+  { field: 'Setup required',      caniship: 'None. Paste a URL.',    others: 'SDK, CLI, or browser extension' },
+  { field: 'Input',               caniship: 'Plain English + URL',   others: 'YAML config or code annotations' },
+  { field: 'Output',              caniship: 'Report a founder reads', others: 'Report a QA team reads' },
+  { field: 'Covers',              caniship: '8 audit layers in one',  others: 'Usually 1–2 layers per tool' },
+  { field: 'Risk + Rewards',      caniship: 'Included',              others: 'Not included' },
+  { field: 'Forward roadmap',     caniship: 'Included',              others: 'Not included' },
+  { field: 'Price',               caniship: 'From €0',               others: 'From $49–$500/month' },
 ]
 
 export default async function LandingPage() {
-  // Check auth state server-side so nav reflects login status
   const cookieStore = cookies()
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -81,488 +32,589 @@ export default async function LandingPage() {
   )
   const { data: { user } } = await supabase.auth.getUser()
 
-  return (
-    <div className="min-h-screen bg-dark-900 text-white">
+  const today = new Date().toLocaleDateString('en-GB', {
+    weekday: 'long', day: 'numeric', month: 'long', year: 'numeric'
+  }).toUpperCase()
 
-      {/* Nav */}
-      <nav className="border-b border-dark-600 px-6 py-4">
-        <div className="max-w-6xl mx-auto flex items-center justify-between">
-          <Link href="/" className="flex items-center">
-            <Image src="/logo.svg" alt="CanIShip" width={160} height={36} priority />
-          </Link>
-          <div className="flex items-center gap-6">
-            <Link href="/pricing" className="text-sm text-gray-400 hover:text-white transition-colors">
-              Pricing
-            </Link>
-            {user ? (
-              <>
-                <Link href="/dashboard" className="text-sm text-gray-400 hover:text-white transition-colors">
-                  Dashboard
-                </Link>
-                <Link
-                  href="/audit/new"
-                  className="px-4 py-2 bg-neon-green text-dark-900 font-bold text-sm rounded-lg hover:bg-neon-green-dim transition-colors font-mono-brand"
-                >
-                  + New Audit
-                </Link>
-              </>
-            ) : (
-              <>
-                <Link href="/login" className="text-sm text-gray-400 hover:text-white transition-colors">
-                  Login
-                </Link>
+  return (
+    <div className="min-h-screen bg-dock-900 text-dock-100" style={{ fontFamily: "'Special Elite', 'Courier New', monospace" }}>
+
+      {/* ── Masthead ─────────────────────────────────────────── */}
+      <header className="border-b-4 border-dock-100 pt-6 pb-0 px-6">
+        <div className="max-w-6xl mx-auto">
+
+          {/* Top strip */}
+          <div className="flex items-center justify-between border-b border-dock-600 pb-2 mb-4">
+            <span className="text-dock-400 text-xs tracking-widest uppercase" style={{ fontFamily: "'Barlow Condensed', sans-serif" }}>
+              PORT AUTHORITY · CARGO INSPECTION DIVISION
+            </span>
+            <span className="text-dock-400 text-xs tracking-widest" style={{ fontFamily: "'Barlow Condensed', sans-serif" }}>
+              {today}
+            </span>
+            <span className="text-dock-400 text-xs tracking-widest uppercase" style={{ fontFamily: "'Barlow Condensed', sans-serif" }}>
+              Est. 2026 · Vol. I
+            </span>
+          </div>
+
+          {/* Nameplate */}
+          <div className="text-center py-4 border-b-2 border-dock-100 mb-4">
+            <h1
+              className="text-dock-50 leading-none tracking-tight"
+              style={{
+                fontFamily: "'Playfair Display', Georgia, serif",
+                fontSize: 'clamp(3rem, 10vw, 7rem)',
+                fontWeight: 900,
+                letterSpacing: '-0.02em',
+              }}
+            >
+              CanIShip
+            </h1>
+            <p
+              className="text-dock-300 mt-1 tracking-widest text-xs uppercase"
+              style={{ fontFamily: "'Barlow Condensed', sans-serif", letterSpacing: '0.3em' }}
+            >
+              The Pre-Launch Cargo Inspection Authority for Web Applications
+            </p>
+          </div>
+
+          {/* Nav strip */}
+          <div className="flex items-center justify-between pb-3">
+            <nav className="flex items-center gap-6 text-xs uppercase tracking-widest text-dock-400" style={{ fontFamily: "'Barlow Condensed', sans-serif" }}>
+              <Link href="/pricing" className="hover:text-dock-100 transition-colors">Pricing</Link>
+              <span className="text-dock-700">·</span>
+              <Link href="#how-it-works" className="hover:text-dock-100 transition-colors">How It Works</Link>
+              <span className="text-dock-700">·</span>
+              <Link href="#standards" className="hover:text-dock-100 transition-colors">Standards</Link>
+            </nav>
+            <div className="flex items-center gap-3">
+              {user ? (
+                <>
+                  <Link href="/dashboard" className="text-xs uppercase tracking-widest text-dock-400 hover:text-dock-100 transition-colors" style={{ fontFamily: "'Barlow Condensed', sans-serif" }}>
+                    Dashboard
+                  </Link>
+                  <Link
+                    href="/audit/new"
+                    className="px-4 py-2 bg-amber text-dock-900 text-xs font-bold uppercase tracking-widest hover:bg-amber-dim transition-colors"
+                    style={{ fontFamily: "'Barlow Condensed', sans-serif" }}
+                  >
+                    File New Manifest →
+                  </Link>
+                </>
+              ) : (
+                <>
+                  <Link href="/login" className="text-xs uppercase tracking-widest text-dock-400 hover:text-dock-100 transition-colors" style={{ fontFamily: "'Barlow Condensed', sans-serif" }}>
+                    Sign In
+                  </Link>
+                  <Link
+                    href="/signup"
+                    className="px-4 py-2 bg-amber text-dock-900 text-xs font-bold uppercase tracking-widest hover:bg-amber-dim transition-colors"
+                    style={{ fontFamily: "'Barlow Condensed', sans-serif" }}
+                  >
+                    Request Clearance →
+                  </Link>
+                </>
+              )}
+            </div>
+          </div>
+
+        </div>
+      </header>
+
+      {/* ── Above the fold ───────────────────────────────────── */}
+      <section className="px-6 py-10 border-b border-dock-600">
+        <div className="max-w-6xl mx-auto">
+          <div className="grid grid-cols-12 gap-6">
+
+            {/* Main headline — col 1–8 */}
+            <div className="col-span-12 md:col-span-8 border-r border-dock-600 pr-6">
+              <div className="mb-3">
+                <span className="telex">Breaking</span>
+              </div>
+              <h2
+                className="text-dock-50 mb-4 leading-tight"
+                style={{
+                  fontFamily: "'Playfair Display', Georgia, serif",
+                  fontSize: 'clamp(1.8rem, 5vw, 3.2rem)',
+                  fontWeight: 700,
+                  lineHeight: 1.1,
+                }}
+              >
+                Solo builders are shipping broken apps every day. Not because they are careless — because they are alone.
+              </h2>
+              <p className="text-dock-300 text-base leading-relaxed mb-6 max-w-2xl">
+                CanIShip is an automated cargo inspection service for web applications. Paste your URL.
+                Describe what your app does. Receive a structured inspection report with a{' '}
+                <strong className="text-amber">ShipScore™</strong> and a binary verdict:{' '}
+                <strong className="text-stamp-green">CLEARED FOR DEPARTURE</strong> or{' '}
+                <strong className="text-stamp-red">HOLD — DEFECTS FOUND</strong>.
+              </p>
+              <div className="flex items-center gap-4">
                 <Link
                   href="/signup"
-                  className="px-4 py-2 bg-neon-green text-dark-900 font-bold text-sm rounded-lg hover:bg-neon-green-dim transition-colors font-mono-brand"
+                  className="px-6 py-3 bg-amber text-dock-900 font-bold uppercase tracking-widest text-sm hover:bg-amber-dim transition-colors"
+                  style={{ fontFamily: "'Barlow Condensed', sans-serif" }}
                 >
-                  Get started free
+                  File Your First Manifest Free →
                 </Link>
-              </>
-            )}
-          </div>
-        </div>
-      </nav>
-
-      {/* Hero */}
-      <section className="px-6 pt-20 pb-16 text-center">
-        <div className="max-w-4xl mx-auto">
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-neon-green/30 bg-neon-green/10 text-neon-green text-xs font-mono mb-8">
-            <span className="w-1.5 h-1.5 bg-neon-green rounded-full animate-pulse" />
-            AI-powered QA for solo builders
-          </div>
-
-          <h1 className="font-mono-brand font-black text-5xl md:text-7xl mb-6 leading-none tracking-tight">
-            <span className="text-neon-green text-glow-green">Can</span>
-            <span className="text-white">IShip</span>
-            <span className="text-gray-500">?</span>
-          </h1>
-
-          <p className="text-xl md:text-2xl text-gray-300 mb-4 leading-relaxed max-w-2xl mx-auto">
-            Paste your URL. Get your{' '}
-            <span className="text-neon-green font-semibold">ShipScore</span>.
-            Know exactly what to fix before real users find it.
-          </p>
-
-          <p className="text-gray-500 mb-10 max-w-xl mx-auto">
-            Bulletproof QA in minutes — functional tests, accessibility, performance, security.
-            Written like a senior developer reviewed your app, not a bureaucratic QA form.
-          </p>
-
-          <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <Link
-              href="/signup"
-              className="px-8 py-4 bg-neon-green text-dark-900 font-bold text-lg rounded-xl hover:bg-neon-green-dim transition-all glow-green font-mono-brand tracking-wide"
-            >
-              Run your first audit free →
-            </Link>
-            <Link
-              href="/pricing"
-              className="px-8 py-4 border border-dark-400 text-gray-300 font-semibold text-lg rounded-xl hover:border-dark-300 hover:text-white transition-colors"
-            >
-              See pricing
-            </Link>
-          </div>
-
-          <p className="text-xs text-gray-600 mt-4">No credit card required · 3 free audits/month</p>
-        </div>
-      </section>
-
-      {/* ShipScore demo visual */}
-      <section className="px-6 py-12">
-        <div className="max-w-3xl mx-auto">
-          <div className="rounded-2xl border border-dark-500 bg-dark-800 p-8 font-mono text-sm">
-            <div className="flex items-center gap-2 mb-6">
-              <div className="w-3 h-3 rounded-full bg-red-500" />
-              <div className="w-3 h-3 rounded-full bg-yellow-500" />
-              <div className="w-3 h-3 rounded-full bg-green-500" />
-              <span className="ml-2 text-gray-600 text-xs">CanIShip Audit Report</span>
+                <Link
+                  href="/pricing"
+                  className="text-xs uppercase tracking-widest text-dock-400 hover:text-dock-100 transition-colors border-b border-dock-600 pb-0.5"
+                  style={{ fontFamily: "'Barlow Condensed', sans-serif" }}
+                >
+                  View Rates
+                </Link>
+              </div>
+              <p className="mt-3 text-xs text-dock-500 uppercase tracking-wider" style={{ fontFamily: "'Barlow Condensed', sans-serif" }}>
+                No SDK. No installation. No credit card. One free inspection per month, always.
+              </p>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 items-center">
-              {/* Mock score */}
-              <div className="flex flex-col items-center">
-                <div className="relative w-32 h-32">
-                  <svg viewBox="0 0 120 120" className="-rotate-90 w-full h-full">
-                    <circle cx="60" cy="60" r="50" fill="none" stroke="#222" strokeWidth="10" />
-                    <circle cx="60" cy="60" r="50" fill="none" stroke="#00FF88" strokeWidth="10"
-                      strokeLinecap="round"
-                      strokeDasharray={`${2 * Math.PI * 50}`}
-                      strokeDashoffset={`${2 * Math.PI * 50 * (1 - 0.73)}`}
-                      style={{ filter: 'drop-shadow(0 0 6px #00FF8860)' }}
-                    />
-                  </svg>
-                  <div className="absolute inset-0 flex flex-col items-center justify-center">
-                    <span className="font-bold text-3xl text-neon-green">73</span>
-                    <span className="text-xs text-gray-500">/100</span>
+            {/* Sample manifest — col 9–12 */}
+            <div className="col-span-12 md:col-span-4">
+              <div className="border border-dock-600 p-4 bg-dock-800">
+
+                {/* Manifest header */}
+                <div className="border-b-2 border-dock-100 pb-2 mb-3 text-center">
+                  <div className="text-xs uppercase tracking-widest text-dock-400 mb-1" style={{ fontFamily: "'Barlow Condensed', sans-serif" }}>
+                    Inspection Report
+                  </div>
+                  <div className="text-dock-50 font-bold text-sm" style={{ fontFamily: "'Playfair Display', serif" }}>
+                    CanIShip Authority
+                  </div>
+                  <div className="text-xs text-dock-500 mt-0.5" style={{ fontFamily: "'Barlow Condensed', sans-serif" }}>
+                    Form CI-7 · Automated Survey
                   </div>
                 </div>
-                <div className="text-neon-green font-bold mt-2 tracking-wide">Almost there</div>
-              </div>
 
-              {/* Mock issues */}
-              <div className="col-span-2 space-y-2 text-xs">
+                {/* Fields */}
                 {[
-                  { color: '#FF3B30', label: 'CRITICAL', text: 'Login form fails on mobile Safari' },
-                  { color: '#FF9500', label: 'UX', text: 'Success state missing after form submit' },
-                  { color: '#AF52DE', label: 'A11Y', text: '3 images missing alt text (WCAG 2.1 AA)' },
-                  { color: '#0A84FF', label: 'PERF', text: 'LCP: 4200ms (target: <2500ms)' },
-                  { color: '#00FF88', label: 'PASS', text: 'Navigation works end-to-end' },
-                ].map(({ color, label, text }) => (
-                  <div key={label} className="flex items-center gap-2 py-1.5 border-b border-dark-600 last:border-0">
-                    <span className="font-bold text-xs px-1.5 py-0.5 rounded"
-                      style={{ color, backgroundColor: color + '20' }}>
-                      {label}
-                    </span>
-                    <span className="text-gray-300">{text}</span>
+                  { field: 'Vessel', value: 'myapp.com' },
+                  { field: 'Inspector', value: 'Claude AI + Playwright' },
+                  { field: 'Duration', value: '14m 32s' },
+                  { field: 'Layers', value: '8 of 8 complete' },
+                  { field: 'Defects', value: '3 critical · 7 minor' },
+                ].map(({ field, value }) => (
+                  <div key={field} className="manifest-row">
+                    <span className="field-name">{field}</span>
+                    <span className="field-dots" />
+                    <span className="field-value">{value}</span>
                   </div>
                 ))}
+
+                {/* Score */}
+                <div className="mt-4 pt-3 border-t-2 border-dock-100 text-center">
+                  <div className="text-xs uppercase tracking-widest text-dock-400 mb-1" style={{ fontFamily: "'Barlow Condensed', sans-serif" }}>
+                    ShipScore™
+                  </div>
+                  <div
+                    className="text-6xl font-black text-amber leading-none mb-2"
+                    style={{ fontFamily: "'Playfair Display', serif" }}
+                  >
+                    61
+                  </div>
+                  <div className="flex justify-center">
+                    <span className="stamp stamp-amber">Hold — Fix Required</span>
+                  </div>
+                </div>
+
+              </div>
+            </div>
+
+          </div>
+        </div>
+      </section>
+
+      {/* ── 8 Audit Layers ───────────────────────────────────── */}
+      <section id="how-it-works" className="px-6 py-12 border-b border-dock-600">
+        <div className="max-w-6xl mx-auto">
+
+          <div className="border-b-2 border-dock-100 mb-6 pb-2 flex items-baseline justify-between">
+            <h3
+              className="text-dock-50 text-2xl"
+              style={{ fontFamily: "'Playfair Display', serif", fontWeight: 700 }}
+            >
+              The Eight-Layer Inspection Protocol
+            </h3>
+            <span className="text-xs text-dock-500 uppercase tracking-widest" style={{ fontFamily: "'Barlow Condensed', sans-serif" }}>
+              All layers run on every inspection
+            </span>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-0">
+            {auditLayers.map(({ code, label, detail }, i) => (
+              <div
+                key={code}
+                className={`p-5 border-dock-600 ${
+                  i % 2 === 0 ? 'border-r' : ''
+                } ${i < auditLayers.length - 2 ? 'border-b' : ''}`}
+              >
+                <div className="flex items-start gap-4">
+                  <div
+                    className="flex-shrink-0 w-10 text-center pt-0.5 text-dock-500 font-bold text-xs uppercase tracking-widest"
+                    style={{ fontFamily: "'Barlow Condensed', sans-serif" }}
+                  >
+                    {code}
+                  </div>
+                  <div>
+                    <div
+                      className="text-amber font-bold text-sm mb-1 uppercase tracking-wide"
+                      style={{ fontFamily: "'Barlow Condensed', sans-serif" }}
+                    >
+                      {label}
+                    </div>
+                    <p className="text-dock-300 text-sm leading-relaxed">{detail}</p>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+
+        </div>
+      </section>
+
+      {/* ── Comparison table ─────────────────────────────────── */}
+      <section className="px-6 py-12 border-b border-dock-600">
+        <div className="max-w-6xl mx-auto">
+          <div className="border-b-2 border-dock-100 mb-6 pb-2">
+            <h3
+              className="text-dock-50 text-2xl"
+              style={{ fontFamily: "'Playfair Display', serif", fontWeight: 700 }}
+            >
+              How CanIShip Differs From Other Tools
+            </h3>
+          </div>
+          <div className="border border-dock-600 overflow-hidden">
+            <div className="grid grid-cols-3 bg-dock-800 border-b-2 border-dock-100 text-xs uppercase tracking-widest text-dock-300 px-4 py-2" style={{ fontFamily: "'Barlow Condensed', sans-serif" }}>
+              <span>Criterion</span>
+              <span className="text-amber">CanIShip</span>
+              <span>Other QA Tools</span>
+            </div>
+            {differentiatorsRows.map(({ field, caniship, others }, i) => (
+              <div
+                key={field}
+                className={`grid grid-cols-3 px-4 py-3 text-sm ${i % 2 === 0 ? 'bg-dock-900' : 'bg-dock-800'} ${i < differentiatorsRows.length - 1 ? 'border-b border-dock-600' : ''}`}
+              >
+                <span className="text-dock-400 text-xs uppercase tracking-wide" style={{ fontFamily: "'Barlow Condensed', sans-serif" }}>
+                  {field}
+                </span>
+                <span className="text-dock-100">{caniship}</span>
+                <span className="text-dock-500">{others}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ── Standards ────────────────────────────────────────── */}
+      <section id="standards" className="px-6 py-12 border-b border-dock-600">
+        <div className="max-w-6xl mx-auto">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-12">
+            <div>
+              <div className="border-b-2 border-dock-100 mb-5 pb-2">
+                <h3 className="text-dock-50 text-xl" style={{ fontFamily: "'Playfair Display', serif", fontWeight: 700 }}>
+                  Standards Referenced
+                </h3>
+              </div>
+              {[
+                { abbr: 'WCAG 2.1 AA',             full: 'Web Content Accessibility Guidelines, Level AA' },
+                { abbr: 'WCAG 2.5.5',               full: 'Target Size — mobile touch target minimum' },
+                { abbr: 'Core Web Vitals',           full: 'Google Lighthouse · LCP, CLS, FCP, TBT, INP' },
+                { abbr: 'OWASP Security Headers',   full: 'CSP, HSTS, X-Frame-Options, X-Content-Type' },
+                { abbr: 'axe-core (Deque)',          full: 'Accessibility engine used by Google and Microsoft' },
+                { abbr: 'RFC 7231',                  full: 'HTTP/1.1 — correct status code enforcement' },
+                { abbr: 'Open Graph Protocol',       full: 'Meta / Facebook social card specification' },
+              ].map(({ abbr, full }) => (
+                <div key={abbr} className="manifest-row">
+                  <span className="field-name">{abbr}</span>
+                  <span className="field-dots" />
+                  <span className="field-value text-xs text-dock-400">{full}</span>
+                </div>
+              ))}
+            </div>
+            <div>
+              <div className="border-b-2 border-dock-100 mb-5 pb-2">
+                <h3 className="text-dock-50 text-xl" style={{ fontFamily: "'Playfair Display', serif", fontWeight: 700 }}>
+                  Scope of This Inspection
+                </h3>
+              </div>
+              <div className="space-y-4">
+                <div className="border-l-2 border-stamp-green pl-4">
+                  <div className="text-xs uppercase tracking-widest text-dock-400 mb-1" style={{ fontFamily: "'Barlow Condensed', sans-serif" }}>
+                    Within Scope
+                  </div>
+                  <p className="text-dock-300 text-sm leading-relaxed">
+                    Functional navigation, WCAG 2.1 AA accessibility, Core Web Vitals, OWASP security
+                    headers, broken links, console errors, SEO, and mobile readiness at 375px — eight
+                    layers in a single automated run.
+                  </p>
+                </div>
+                <div className="border-l-2 border-stamp-red pl-4">
+                  <div className="text-xs uppercase tracking-widest text-dock-400 mb-1" style={{ fontFamily: "'Barlow Condensed', sans-serif" }}>
+                    Outside Scope
+                  </div>
+                  <p className="text-dock-300 text-sm leading-relaxed">
+                    Manual penetration testing, load testing, legal compliance review,
+                    screen-reader user testing, or auth-gated flows beyond provided test credentials.
+                    For regulatory obligations, supplement with human expert review.
+                  </p>
+                </div>
+                <div className="border-l-2 border-stamp-amber pl-4">
+                  <div className="text-xs uppercase tracking-widest text-dock-400 mb-1" style={{ fontFamily: "'Barlow Condensed', sans-serif" }}>
+                    Inspection Cadence
+                  </div>
+                  <p className="text-dock-300 text-sm leading-relaxed">
+                    Each inspection is a fresh snapshot. Re-run after fixes to measure improvement.
+                    Builder and Studio plans retain full history with score differential between runs.
+                  </p>
+                </div>
               </div>
             </div>
           </div>
         </div>
       </section>
 
-      {/* What gets audited */}
-      <section className="px-6 py-16">
-        <div className="max-w-5xl mx-auto">
-          <h2 className="text-3xl font-bold text-center mb-3">
-            Eight audit layers. One report.
-          </h2>
-          <p className="text-gray-400 text-center mb-12 max-w-xl mx-auto">
-            Every CanIShip audit runs all eight QA layers in sequence — the same checks a senior engineer would run before releasing.
-          </p>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {auditLayers.map(({ color, label, detail }) => (
-              <div
-                key={label}
-                className="flex items-start gap-4 rounded-xl border border-dark-500 bg-dark-800 p-5 hover:border-dark-400 transition-colors"
-              >
-                <div
-                  className="w-3 h-3 rounded-full flex-shrink-0 mt-1"
-                  style={{ backgroundColor: color, boxShadow: `0 0 8px ${color}60` }}
-                />
-                <div>
-                  <div className="font-semibold text-white mb-1" style={{ color }}>{label}</div>
-                  <div className="text-sm text-gray-400 leading-relaxed">{detail}</div>
-                </div>
-              </div>
-            ))}
+      {/* ── Pricing ──────────────────────────────────────────── */}
+      <section className="px-6 py-12 border-b border-dock-600">
+        <div className="max-w-6xl mx-auto">
+          <div className="border-b-2 border-dock-100 mb-8 pb-2 flex items-baseline justify-between">
+            <h3 className="text-dock-50 text-2xl" style={{ fontFamily: "'Playfair Display', serif", fontWeight: 700 }}>
+              Inspection Tariff
+            </h3>
+            <span className="text-xs text-dock-500 uppercase tracking-widest" style={{ fontFamily: "'Barlow Condensed', sans-serif" }}>
+              No hidden fees. Cancel any time.
+            </span>
           </div>
-        </div>
-      </section>
 
-      {/* Differentiators */}
-      <section className="px-6 py-16 border-t border-dark-700">
-        <div className="max-w-5xl mx-auto">
-          <h2 className="text-3xl font-bold text-center mb-3">
-            Why CanIShip is different
-          </h2>
-          <p className="text-gray-400 text-center mb-12 max-w-xl mx-auto">
-            Built for the builder who ships alone and needs a rigorous, honest technical friend.
-          </p>
-
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            {differentiators.map(({ icon, title, description }) => (
-              <div key={title} className="rounded-xl border border-dark-500 bg-dark-800 p-6 hover:border-neon-green/20 transition-colors">
-                <div className="text-neon-green mb-3">{icon}</div>
-                <h3 className="font-bold text-white mb-2">{title}</h3>
-                <p className="text-sm text-gray-400 leading-relaxed">{description}</p>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* Pricing preview */}
-      <section className="px-6 py-16 border-t border-dark-700">
-        <div className="max-w-4xl mx-auto text-center">
-          <h2 className="text-3xl font-bold mb-3">Priced for real builders</h2>
-          <p className="text-gray-400 mb-10">Not $500/month. Not enterprise pricing. Simple, honest plans.</p>
-
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-0 border border-dock-600">
             {[
               {
-                name: 'Free',
+                name: 'Free Berth',
+                sub: 'Try the inspection process at no cost.',
                 price: '€0',
                 period: 'forever',
-                features: ['3 audits/month', 'Quick Scan only', 'Basic report'],
-                cta: 'Start free',
+                items: [
+                  '1 inspection per month',
+                  'Quick Scan (~5 min)',
+                  'Functional, links, console errors',
+                  'ShipScore + basic verdict',
+                ],
+                excluded: ['Risk & Rewards analysis', 'Future Recommendations', 'Standard & Deep scans', 'Inspection history'],
+                cta: 'Start Free',
                 href: '/signup',
                 highlight: false,
               },
               {
-                name: 'Builder',
+                name: 'Builder Berth',
+                sub: 'For builders who ship on a regular schedule.',
                 price: '€19',
                 period: '/month',
-                features: ['10 audits/month', 'All scan depths', 'Full reports', 'Audit history'],
-                cta: 'Start Building',
-                href: '/signup',
+                items: [
+                  '10 inspections per month',
+                  'All scan depths',
+                  'Full 8-layer report',
+                  'Risk & Rewards analysis',
+                  'Future Recommendations',
+                  'Inspection history + diffs',
+                ],
+                excluded: ['Docker self-hosted'],
+                cta: 'Start Builder',
+                href: null,
+                stripePlan: 'builder',
                 highlight: true,
               },
               {
-                name: 'Studio',
+                name: 'Studio Berth',
+                sub: 'Unlimited inspections. Run on your own infrastructure.',
                 price: '€49',
                 period: '/month',
-                features: ['Unlimited audits', 'All Builder features', 'Docker self-hosted', 'API access'],
-                cta: 'Go Studio',
-                href: '/signup',
+                items: [
+                  'Unlimited inspections',
+                  'All Builder features',
+                  'Docker self-hosted image',
+                  'Your own Anthropic API key',
+                  'No data leaves your machine',
+                  'API access',
+                ],
+                excluded: [],
+                cta: 'Start Studio',
+                href: null,
+                stripePlan: 'studio',
                 highlight: false,
               },
-            ].map(({ name, price, period, features, cta, href, highlight }) => (
+            ].map((plan, i) => (
               <div
-                key={name}
-                className={`rounded-2xl border p-6 text-left relative ${
-                  highlight
-                    ? 'border-neon-green/40 bg-neon-green/5'
-                    : 'border-dark-500 bg-dark-800'
-                }`}
+                key={plan.name}
+                className={`p-6 ${i < 2 ? 'border-r border-dock-600' : ''} ${plan.highlight ? 'bg-dock-800' : 'bg-dock-900'}`}
               >
-                {highlight && (
-                  <div className="absolute -top-3 left-1/2 -translate-x-1/2">
-                    <span className="px-3 py-1 bg-neon-green text-dark-900 text-xs font-bold rounded-full font-mono">
-                      MOST POPULAR
-                    </span>
+                {plan.highlight && (
+                  <div className="mb-3">
+                    <span className="telex text-amber border-amber">Most Filed</span>
                   </div>
                 )}
-                <div className="mb-4">
-                  <div className="text-sm text-gray-400 mb-1">{name}</div>
-                  <div className="flex items-baseline gap-1">
-                    <span className="font-mono-brand font-black text-3xl text-white">{price}</span>
-                    <span className="text-gray-500 text-sm">{period}</span>
-                  </div>
+                <div className="text-xs uppercase tracking-widest text-dock-500 mb-1" style={{ fontFamily: "'Barlow Condensed', sans-serif" }}>
+                  {plan.name}
                 </div>
-                <ul className="space-y-2 mb-6">
-                  {features.map((f) => (
-                    <li key={f} className="flex items-center gap-2 text-sm text-gray-300">
-                      <svg className="w-4 h-4 text-neon-green flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" />
-                      </svg>
-                      {f}
-                    </li>
+                <div className="flex items-baseline gap-1 mb-2">
+                  <span className="text-4xl font-black text-dock-50" style={{ fontFamily: "'Playfair Display', serif" }}>{plan.price}</span>
+                  <span className="text-dock-500 text-sm">{plan.period}</span>
+                </div>
+                <p className="text-dock-400 text-xs mb-5 leading-relaxed">{plan.sub}</p>
+
+                <div className="border-t border-dock-600 pt-4 space-y-2 mb-6">
+                  {plan.items.map(item => (
+                    <div key={item} className="flex items-start gap-2 text-xs text-dock-200">
+                      <span className="text-stamp-green mt-0.5 flex-shrink-0">✓</span>
+                      {item}
+                    </div>
                   ))}
-                </ul>
-                <Link
-                  href={href}
-                  className={`block text-center py-2.5 px-4 rounded-lg font-bold text-sm transition-colors ${
-                    highlight
-                      ? 'bg-neon-green text-dark-900 hover:bg-neon-green-dim'
-                      : 'border border-dark-400 text-white hover:border-dark-300'
-                  }`}
-                >
-                  {cta}
-                </Link>
+                  {plan.excluded.map(item => (
+                    <div key={item} className="flex items-start gap-2 text-xs text-dock-600">
+                      <span className="mt-0.5 flex-shrink-0">—</span>
+                      {item}
+                    </div>
+                  ))}
+                </div>
+
+                {plan.href ? (
+                  <Link
+                    href={plan.href}
+                    className={`block text-center py-2.5 text-xs font-bold uppercase tracking-widest transition-colors ${
+                      plan.highlight
+                        ? 'bg-amber text-dock-900 hover:bg-amber-dim'
+                        : 'border border-dock-500 text-dock-300 hover:border-dock-300 hover:text-dock-100'
+                    }`}
+                    style={{ fontFamily: "'Barlow Condensed', sans-serif" }}
+                  >
+                    {plan.cta} →
+                  </Link>
+                ) : (
+                  <Link
+                    href="/signup"
+                    className={`block text-center py-2.5 text-xs font-bold uppercase tracking-widest transition-colors ${
+                      plan.highlight
+                        ? 'bg-amber text-dock-900 hover:bg-amber-dim'
+                        : 'border border-dock-500 text-dock-300 hover:border-dock-300 hover:text-dock-100'
+                    }`}
+                    style={{ fontFamily: "'Barlow Condensed', sans-serif" }}
+                  >
+                    {plan.cta} →
+                  </Link>
+                )}
               </div>
             ))}
           </div>
         </div>
       </section>
 
-      {/* Standards & Transparency */}
-      <section className="px-6 py-16 border-t border-dark-700">
-        <div className="max-w-5xl mx-auto">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-start">
-
-            {/* Standards */}
-            <div>
-              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-dark-400 bg-dark-800 text-gray-400 text-xs font-mono mb-5">
-                WHAT WE TEST AGAINST
-              </div>
-              <h2 className="text-2xl font-bold text-white mb-4">Industry-standard quality checks</h2>
-              <p className="text-gray-400 text-sm mb-6 leading-relaxed">
-                Every CanIShip audit runs against recognised, open standards — the same benchmarks
-                used by professional QA teams and major tech companies.
-              </p>
-              <div className="space-y-3">
-                {[
-                  { label: 'WCAG 2.1 AA', detail: 'Web Content Accessibility Guidelines — international accessibility standard', color: '#AF52DE' },
-                  { label: 'Lighthouse / Core Web Vitals', detail: 'Google performance metrics — LCP, CLS, FCP, TBT, INP', color: '#0A84FF' },
-                  { label: 'OWASP headers', detail: 'OWASP recommended security headers — CSP, HSTS, X-Frame-Options and more', color: '#CC0000' },
-                  { label: 'Playwright functional', detail: 'End-to-end browser automation — the same engine used at Microsoft and Meta', color: '#FF9500' },
-                  { label: 'axe-core', detail: 'The accessibility engine behind Deque, Google Lighthouse, and Microsoft accessibility tools', color: '#7CFF5A' },
-                  { label: 'SEO best practices', detail: 'Title, meta description, Open Graph, canonical, sitemap, robots.txt — everything search engines need', color: '#34C759' },
-                  { label: 'Mobile / WCAG 2.5.5', detail: 'Real iPhone viewport (375px) — viewport meta, horizontal scroll, touch target sizes', color: '#5E5CE6' },
-                ].map(({ label, detail, color }) => (
-                  <div key={label} className="flex items-start gap-3 py-2.5 border-b border-dark-700 last:border-0">
-                    <div className="w-1.5 h-1.5 rounded-full flex-shrink-0 mt-1.5" style={{ backgroundColor: color }} />
-                    <div>
-                      <div className="text-sm font-semibold text-white">{label}</div>
-                      <div className="text-xs text-gray-500 mt-0.5">{detail}</div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            {/* Honest limitations */}
-            <div>
-              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-dark-400 bg-dark-800 text-gray-400 text-xs font-mono mb-5">
-                HONEST ABOUT WHAT WE ARE
-              </div>
-              <h2 className="text-2xl font-bold text-white mb-4">A first-pass audit, not a final word</h2>
-              <p className="text-gray-400 text-sm mb-5 leading-relaxed">
-                CanIShip gives you a rigorous, automated baseline — the kind of check that would take a
-                senior developer hours to run manually. But no automated tool is perfect or exhaustive.
-              </p>
-
-              <div className="space-y-4">
-                <div className="rounded-xl border border-dark-500 bg-dark-800 p-4">
-                  <div className="flex items-start gap-3">
-                    <svg className="w-5 h-5 text-neon-green flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                    </svg>
-                    <div>
-                      <div className="text-sm font-semibold text-white mb-1">What it covers</div>
-                      <div className="text-xs text-gray-400 leading-relaxed">
-                        Functional navigation, WCAG 2.1 AA accessibility, Core Web Vitals, OWASP security headers,
-                        broken links, console errors, SEO health (meta, OG, sitemap), and mobile readiness (375px viewport, touch targets) — eight layers in one run.
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="rounded-xl border border-dark-500 bg-dark-800 p-4">
-                  <div className="flex items-start gap-3">
-                    <svg className="w-5 h-5 text-yellow-400 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                    </svg>
-                    <div>
-                      <div className="text-sm font-semibold text-white mb-1">What it doesn&apos;t replace</div>
-                      <div className="text-xs text-gray-400 leading-relaxed">
-                        Manual penetration testing, auth-gated flow testing, screen-reader user testing,
-                        load/stress testing, or legal compliance review. For anything with regulatory implications,
-                        always complement this with human expert review.
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="rounded-xl border border-neon-green/10 bg-neon-green/5 p-4">
-                  <div className="flex items-start gap-3">
-                    <svg className="w-5 h-5 text-neon-green flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-                    </svg>
-                    <div>
-                      <div className="text-sm font-semibold text-neon-green mb-1">Continuously improving</div>
-                      <div className="text-xs text-gray-400 leading-relaxed">
-                        The web evolves fast. Frameworks change, new vulnerability classes emerge, standards get updated.
-                        We ship regular improvements to the audit engine so your results stay relevant over time.
-                        Every re-audit is a fresh snapshot against the latest checks.
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-          </div>
-        </div>
-      </section>
-
-      {/* CTA */}
-      <section className="px-6 py-20 border-t border-dark-700 text-center">
-        <div className="max-w-2xl mx-auto">
-          <h2 className="font-mono-brand font-black text-4xl md:text-5xl text-white mb-4">
-            Stop shipping blind.
+      {/* ── CTA ──────────────────────────────────────────────── */}
+      <section className="px-6 py-16 border-b border-dock-600">
+        <div className="max-w-3xl mx-auto text-center">
+          <div className="double-rule mb-8" />
+          <h2
+            className="text-dock-50 mb-4 leading-tight"
+            style={{
+              fontFamily: "'Playfair Display', serif",
+              fontSize: 'clamp(2rem, 5vw, 3.5rem)',
+              fontWeight: 900,
+            }}
+          >
+            Your cargo does not leave the dock until it passes inspection.
           </h2>
-          <p className="text-gray-400 mb-8 text-lg">
-            Your next user is judging your app in the first 8 seconds. Know what they will find before they do.
+          <p className="text-dock-300 mb-8 text-base leading-relaxed max-w-xl mx-auto">
+            File a manifest. Receive an inspection report. Know what to fix before your users find it.
           </p>
           <Link
             href="/signup"
-            className="inline-block px-10 py-5 bg-neon-green text-dark-900 font-bold text-xl rounded-xl hover:bg-neon-green-dim transition-all glow-green font-mono-brand"
+            className="inline-block px-8 py-4 bg-amber text-dock-900 font-bold uppercase tracking-widest text-sm hover:bg-amber-dim transition-colors"
+            style={{ fontFamily: "'Barlow Condensed', sans-serif" }}
           >
-            Get your ShipScore free →
+            File Your First Manifest — Free →
           </Link>
+          <div className="double-rule mt-8" />
         </div>
       </section>
 
-      {/* Footer */}
-      <footer className="border-t border-dark-700 px-6 pt-10 pb-8">
+      {/* ── Footer ───────────────────────────────────────────── */}
+      <footer className="px-6 pt-10 pb-8 border-t-4 border-dock-100">
         <div className="max-w-6xl mx-auto">
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-8 mb-8">
 
-          {/* Top row */}
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-8 mb-10">
-
-            {/* Brand */}
             <div className="md:col-span-1">
-              <div className="font-mono-brand font-bold text-neon-green text-lg mb-3">CanIShip</div>
-              <p className="text-xs text-gray-600 leading-relaxed mb-4">
-                AI-powered app audit for solo builders. Get your ShipScore in minutes.
+              <div className="text-dock-50 font-black text-xl mb-2" style={{ fontFamily: "'Playfair Display', serif" }}>CanIShip</div>
+              <p className="text-xs text-dock-500 leading-relaxed mb-4">
+                Automated cargo inspection for web applications. Eight audit layers. One honest verdict.
               </p>
-              {/* LinkedIn */}
               <a
                 href="https://www.linkedin.com/company/actvli"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="inline-flex items-center gap-2 text-gray-500 hover:text-gray-300 transition-colors"
-                aria-label="Äctvli on LinkedIn"
+                className="text-xs text-dock-500 hover:text-dock-300 uppercase tracking-widest transition-colors"
+                style={{ fontFamily: "'Barlow Condensed', sans-serif" }}
               >
-                <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
-                  <path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433a2.062 2.062 0 01-2.063-2.065 2.064 2.064 0 112.063 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/>
-                </svg>
-                <span className="text-xs">LinkedIn</span>
+                Äctvli on LinkedIn ↗
               </a>
             </div>
 
-            {/* Product */}
             <div>
-              <h4 className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">Product</h4>
-              <ul className="space-y-2 text-sm text-gray-600">
-                <li><Link href="/pricing" className="hover:text-gray-400 transition-colors">Pricing</Link></li>
-                <li><Link href="/audit/new" className="hover:text-gray-400 transition-colors">Run an audit</Link></li>
-                <li><Link href="/dashboard" className="hover:text-gray-400 transition-colors">Dashboard</Link></li>
-                <li><Link href="/login" className="hover:text-gray-400 transition-colors">Login</Link></li>
-                <li><Link href="/signup" className="hover:text-gray-400 transition-colors">Sign up free</Link></li>
+              <div className="text-xs uppercase tracking-widest text-dock-500 border-b border-dock-600 pb-2 mb-3" style={{ fontFamily: "'Barlow Condensed', sans-serif" }}>
+                Product
+              </div>
+              <ul className="space-y-2 text-xs text-dock-400" style={{ fontFamily: "'Barlow Condensed', sans-serif" }}>
+                {[
+                  ['Pricing', '/pricing'],
+                  ['Run an Inspection', '/audit/new'],
+                  ['Dashboard', '/dashboard'],
+                  ['Sign In', '/login'],
+                  ['Create Account', '/signup'],
+                ].map(([label, href]) => (
+                  <li key={href}>
+                    <Link href={href} className="hover:text-dock-200 uppercase tracking-widest transition-colors">
+                      {label}
+                    </Link>
+                  </li>
+                ))}
               </ul>
             </div>
 
-            {/* Standards */}
             <div>
-              <h4 className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">Standards used</h4>
-              <ul className="space-y-2 text-xs text-gray-600">
-                <li>WCAG 2.1 AA</li>
-                <li>WCAG 2.5.5 (touch targets)</li>
-                <li>Google Lighthouse</li>
-                <li>Core Web Vitals</li>
-                <li>OWASP Security Headers</li>
-                <li>axe-core (Deque)</li>
-                <li>Playwright</li>
-                <li>SEO best practices</li>
+              <div className="text-xs uppercase tracking-widest text-dock-500 border-b border-dock-600 pb-2 mb-3" style={{ fontFamily: "'Barlow Condensed', sans-serif" }}>
+                Standards
+              </div>
+              <ul className="space-y-1.5 text-xs text-dock-500">
+                {['WCAG 2.1 AA', 'WCAG 2.5.5', 'Core Web Vitals', 'OWASP Headers', 'axe-core', 'Playwright', 'Google Lighthouse'].map(s => (
+                  <li key={s} className="uppercase tracking-wider" style={{ fontFamily: "'Barlow Condensed', sans-serif" }}>{s}</li>
+                ))}
               </ul>
             </div>
 
-            {/* Legal */}
             <div>
-              <h4 className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">Legal</h4>
-              <ul className="space-y-2 text-sm text-gray-600">
-                <li><Link href="/privacy" className="hover:text-gray-400 transition-colors">Privacy Policy</Link></li>
-                <li><Link href="/terms" className="hover:text-gray-400 transition-colors">Terms of Service</Link></li>
+              <div className="text-xs uppercase tracking-widest text-dock-500 border-b border-dock-600 pb-2 mb-3" style={{ fontFamily: "'Barlow Condensed', sans-serif" }}>
+                Legal
+              </div>
+              <ul className="space-y-2 text-xs text-dock-400" style={{ fontFamily: "'Barlow Condensed', sans-serif" }}>
+                <li><Link href="/privacy" className="hover:text-dock-200 uppercase tracking-widest transition-colors">Privacy Policy</Link></li>
+                <li><Link href="/terms" className="hover:text-dock-200 uppercase tracking-widest transition-colors">Terms of Service</Link></li>
               </ul>
-              <div className="mt-4 rounded-lg border border-dark-600 bg-dark-800 p-3">
-                <p className="text-xs text-gray-600 leading-relaxed">
-                  We use only session cookies necessary for authentication. No tracking or advertising cookies.
+              <div className="mt-4 border border-dock-600 p-3 bg-dock-800">
+                <p className="text-xs text-dock-600 leading-relaxed">
+                  Session cookies only. No tracking. No advertising. No data sold.
                 </p>
               </div>
             </div>
 
           </div>
 
-          {/* Bottom row */}
-          <div className="border-t border-dark-700 pt-6 flex flex-col md:flex-row items-center justify-between gap-3 text-xs text-gray-700">
-            <div>
-              © {new Date().getFullYear()} Äctvli Responsible Consulting. All rights reserved.
+          <div className="border-t border-dock-600 pt-5 flex flex-col md:flex-row items-center justify-between gap-3">
+            <div className="text-xs text-dock-600 uppercase tracking-widest" style={{ fontFamily: "'Barlow Condensed', sans-serif" }}>
+              © {new Date().getFullYear()} Äctvli Responsible Consulting
             </div>
-            <div className="flex items-center gap-4">
-              <Link href="/privacy" className="hover:text-gray-500 transition-colors">Privacy</Link>
-              <Link href="/terms" className="hover:text-gray-500 transition-colors">Terms</Link>
-              <span className="text-gray-800">·</span>
-              <span>Audit results are informational — not a guarantee of security or compliance.</span>
+            <div className="text-xs text-dock-700 uppercase tracking-widest text-center" style={{ fontFamily: "'Barlow Condensed', sans-serif" }}>
+              Inspection results are informational — not a guarantee of security, legal compliance, or fitness for purpose.
             </div>
           </div>
-
         </div>
       </footer>
+
     </div>
   )
 }
