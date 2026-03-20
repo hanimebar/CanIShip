@@ -10,7 +10,7 @@
  * be bundled by webpack.
  */
 
-import { createSupabaseServiceClient, type AuditJob } from './supabase'
+import { createSupabaseServiceClient, type AuditJob, type ReportTier } from './supabase'
 
 const REDIS_URL = process.env.REDIS_URL
 const WORKER_POLL_INTERVAL_MS = 5000
@@ -81,8 +81,22 @@ async function processNextJob() {
   }
 }
 
+async function getUserTier(userId: string): Promise<ReportTier> {
+  const supabase = createSupabaseServiceClient()
+  const { data } = await supabase
+    .from('profiles')
+    .select('plan')
+    .eq('id', userId)
+    .single()
+  const plan = data?.plan as string | undefined
+  if (plan === 'studio') return 'studio'
+  if (plan === 'builder') return 'builder'
+  return 'free'
+}
+
 async function runAuditPipeline(job: AuditJob) {
   const supabase = createSupabaseServiceClient()
+  const tier = await getUserTier(job.user_id)
 
   // Load runner modules at runtime using dynamic paths
   // webpackIgnore comment prevents webpack from tracing these requires
@@ -164,6 +178,7 @@ async function runAuditPipeline(job: AuditJob) {
     seoResults,
     mobileResults,
     screenshots,
+    tier,
   })
 
   const finalReport = generateReport(claudeReport, {

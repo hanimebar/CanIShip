@@ -74,7 +74,25 @@ export type ClaudeReport = {
   top_5_fixes: Fix[]
 }
 
-export type Issue = {
+// Fields added by Builder and Studio tiers
+export type ExpertAnnotation = {
+  expert_role?: string          // e.g. "Senior Application Security Engineer"
+  expert_perspective?: string   // The issue explained from that expert's viewpoint
+  why_it_matters?: string       // Business / user impact, not just technical description
+  detailed_remediation?: string // Step-by-step fix, not just a hint
+}
+
+// Fields added by Studio tier only
+export type StudioAnnotation = ExpertAnnotation & {
+  ai_fixable?: boolean
+  ai_confidence?: 'high' | 'medium' | 'low'
+  ai_prompt?: string            // Exact prompt the user can paste into Claude/ChatGPT
+  human_review_required?: boolean
+  human_expert_type?: string    // e.g. "Penetration Tester", "Accessibility Auditor"
+  human_review_reason?: string  // Why a human is needed here
+}
+
+export type Issue = StudioAnnotation & {
   title: string
   description: string
   location?: string
@@ -125,3 +143,5 @@ export type Fix = {
   description: string
   estimated_effort?: string
 }
+
+export type ReportTier = 'free' | 'builder' | 'studio'

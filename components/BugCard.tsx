@@ -137,8 +137,39 @@ export function BugCard({ item, variant, index }: Props) {
         </div>
       )}
 
-      {/* Remediation */}
-      {item.remediation && (
+      {/* Expert voice (Builder + Studio) */}
+      {item.expert_role && (
+        <div className="mt-3 rounded border border-amber/20 bg-amber/5 p-3 space-y-2">
+          <div className="flex items-center gap-2">
+            <span className="text-xs font-condensed font-bold uppercase tracking-widest text-amber">
+              {item.expert_role}
+            </span>
+          </div>
+          {item.expert_perspective && (
+            <p className="text-xs text-dock-200 leading-relaxed">{item.expert_perspective}</p>
+          )}
+          {item.why_it_matters && (
+            <div>
+              <span className="text-xs font-mono font-semibold text-amber-dim">Why it matters: </span>
+              <span className="text-xs text-dock-300">{item.why_it_matters}</span>
+            </div>
+          )}
+          {item.detailed_remediation && (
+            <div
+              className="rounded p-2.5 text-xs leading-relaxed"
+              style={{ backgroundColor: config.color + '08', borderLeft: `2px solid ${config.color}40` }}
+            >
+              <span className="font-mono font-semibold" style={{ color: config.color }}>
+                Step-by-step fix:{' '}
+              </span>
+              <span className="text-dock-200 whitespace-pre-line">{item.detailed_remediation}</span>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Basic remediation (Free tier) */}
+      {!item.expert_role && item.remediation && (
         <div
           className="rounded p-3 text-xs leading-relaxed"
           style={{ backgroundColor: config.color + '08', borderLeft: `2px solid ${config.color}40` }}
@@ -147,6 +178,53 @@ export function BugCard({ item, variant, index }: Props) {
             Fix:{' '}
           </span>
           <span className="text-gray-300">{item.remediation}</span>
+        </div>
+      )}
+
+      {/* AI fix prompt (Studio only) */}
+      {item.ai_prompt && (
+        <div className="mt-3 rounded border border-dock-600 bg-dock-800 p-3">
+          <div className="flex items-center justify-between mb-2">
+            <span className="text-xs font-condensed font-bold uppercase tracking-widest text-dock-300">
+              AI Fix Prompt
+            </span>
+            <div className="flex items-center gap-2">
+              {item.ai_confidence && (
+                <span
+                  className="text-xs font-mono px-1.5 py-0.5 rounded"
+                  style={{
+                    color: item.ai_confidence === 'high' ? '#2D6A2D' : item.ai_confidence === 'medium' ? '#B87300' : '#CC2200',
+                    backgroundColor: item.ai_confidence === 'high' ? '#2D6A2D20' : item.ai_confidence === 'medium' ? '#B8730020' : '#CC220020',
+                  }}
+                >
+                  {item.ai_confidence} confidence
+                </span>
+              )}
+              {item.ai_fixable === false && (
+                <span className="text-xs font-mono text-stamp-amber">partial only</span>
+              )}
+            </div>
+          </div>
+          <pre className="text-xs text-dock-200 whitespace-pre-wrap font-mono leading-relaxed select-all">
+            {item.ai_prompt}
+          </pre>
+        </div>
+      )}
+
+      {/* Human review flag (Studio only) */}
+      {item.human_review_required && (
+        <div className="mt-2 flex items-start gap-2 rounded border border-stamp-red/30 bg-stamp-red/5 p-2.5">
+          <svg className="w-3.5 h-3.5 text-stamp-red flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+          </svg>
+          <div>
+            <span className="text-xs font-semibold text-stamp-red">
+              Human review required{item.human_expert_type ? `: ${item.human_expert_type}` : ''}
+            </span>
+            {item.human_review_reason && (
+              <p className="text-xs text-dock-300 mt-0.5">{item.human_review_reason}</p>
+            )}
+          </div>
         </div>
       )}
     </div>
