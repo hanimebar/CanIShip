@@ -80,6 +80,10 @@ export default async function SettingsPage() {
           hasStripeCustomer={hasStripeCustomer}
           licenseKey={licenseKey}
         />
+
+        <div className="mt-12 pt-6 border-t border-dark-600 text-xs text-gray-600 font-mono">
+          CanIShip v1.2.0
+        </div>
       </div>
     </div>
   )

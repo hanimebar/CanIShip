@@ -654,8 +654,13 @@ export default async function LandingPage() {
           </div>
 
           <div className="border-t border-dock-600 pt-5 flex flex-col md:flex-row items-center justify-between gap-3">
-            <div className="text-xs text-dock-600 uppercase tracking-widest" style={{ fontFamily: "'Barlow Condensed', sans-serif" }}>
-              © {new Date().getFullYear()} Äctvli Responsible Consulting
+            <div className="flex items-center gap-4">
+              <div className="text-xs text-dock-600 uppercase tracking-widest" style={{ fontFamily: "'Barlow Condensed', sans-serif" }}>
+                © {new Date().getFullYear()} Äctvli Responsible Consulting
+              </div>
+              <div className="text-xs text-dock-700 uppercase tracking-widest" style={{ fontFamily: "'Barlow Condensed', sans-serif" }}>
+                v1.2.0
+              </div>
             </div>
             <div className="text-xs text-dock-700 uppercase tracking-widest text-center" style={{ fontFamily: "'Barlow Condensed', sans-serif" }}>
               Inspection results are informational — not a guarantee of security, legal compliance, or fitness for purpose.

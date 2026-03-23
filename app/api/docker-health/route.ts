@@ -15,7 +15,7 @@ export async function GET() {
   return NextResponse.json({
     status: 'ok',
     mode: isDockerMode ? 'docker' : 'cloud',
-    version: process.env.CANISHIP_VERSION || '1.0.0',
+    version: process.env.CANISHIP_VERSION || '1.2.0',
     timestamp: new Date().toISOString(),
   })
 }
