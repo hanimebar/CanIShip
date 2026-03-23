@@ -30,6 +30,7 @@ export async function GET() {
             description: j.description.slice(0, 120),
             score: report.ship_score,
             verdict: report.ship_verdict,
+            app_icon_url: j.app_icon_url ?? null,
           }]
         })
         .sort((a, b) => b.score - a.score)
@@ -43,7 +44,7 @@ export async function GET() {
 
     const { data, error } = await supabase
       .from('audit_reports')
-      .select('ship_score, ship_verdict, audit_jobs!inner(url, description, is_public, created_at)')
+      .select('ship_score, ship_verdict, audit_jobs!inner(url, description, is_public, created_at, app_icon_url)')
       .eq('audit_jobs.is_public', true)
       .gte('audit_jobs.created_at', cutoff)
       .order('ship_score', { ascending: false })
@@ -55,7 +56,7 @@ export async function GET() {
     }
 
     const entries = (data ?? []).map(r => {
-      const job = r.audit_jobs as unknown as { url: string; description: string }
+      const job = r.audit_jobs as unknown as { url: string; description: string; app_icon_url?: string }
       let hostname = job.url
       try { hostname = new URL(job.url).hostname } catch { /* leave as-is */ }
       return {
@@ -63,6 +64,7 @@ export async function GET() {
         description: job.description.slice(0, 120),
         score: r.ship_score,
         verdict: r.ship_verdict,
+        app_icon_url: job.app_icon_url ?? null,
       }
     })
 

@@ -62,6 +62,7 @@ function getDb(): SQLiteDB {
       depth           TEXT NOT NULL DEFAULT 'quick',
       target_platform TEXT NOT NULL DEFAULT 'all',
       is_public       INTEGER NOT NULL DEFAULT 1,
+      app_icon_url    TEXT,
       status          TEXT NOT NULL DEFAULT 'queued',
       error_message   TEXT,
       worker_id       TEXT,
@@ -73,6 +74,7 @@ function getDb(): SQLiteDB {
     -- Add columns to existing DBs (safe to run multiple times)
     ALTER TABLE audit_jobs ADD COLUMN IF NOT EXISTS target_platform TEXT NOT NULL DEFAULT 'all';
     ALTER TABLE audit_jobs ADD COLUMN IF NOT EXISTS is_public INTEGER NOT NULL DEFAULT 1;
+    ALTER TABLE audit_jobs ADD COLUMN IF NOT EXISTS app_icon_url TEXT;
 
     CREATE TABLE IF NOT EXISTS audit_reports (
       id           TEXT PRIMARY KEY,
@@ -97,9 +99,9 @@ function getDb(): SQLiteDB {
       const id = randomUUID()
       const now = new Date().toISOString()
       db.prepare(`
-        INSERT INTO audit_jobs (id, user_id, url, description, flows, depth, target_platform, is_public, status, callback_url, created_at)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'queued', ?, ?)
-      `).run(id, job.user_id, job.url, job.description, JSON.stringify(job.flows || []), job.depth, job.target_platform ?? 'all', job.is_public !== false ? 1 : 0, job.callback_url ?? null, now)
+        INSERT INTO audit_jobs (id, user_id, url, description, flows, depth, target_platform, is_public, app_icon_url, status, callback_url, created_at)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'queued', ?, ?)
+      `).run(id, job.user_id, job.url, job.description, JSON.stringify(job.flows || []), job.depth, job.target_platform ?? 'all', job.is_public !== false ? 1 : 0, job.app_icon_url ?? null, job.callback_url ?? null, now)
       return this.getJob(id)!
     },
 
@@ -161,6 +163,7 @@ function deserializeJob(row: Record<string, unknown>): DockerJob {
     depth: row.depth as 'quick' | 'standard' | 'deep',
     target_platform: (row.target_platform as 'mobile' | 'desktop' | 'all') ?? 'all',
     is_public: row.is_public !== 0,
+    app_icon_url: row.app_icon_url as string | undefined,
     status: row.status as 'queued' | 'running' | 'complete' | 'failed',
     error_message: row.error_message as string | undefined,
     worker_id: row.worker_id as string | undefined,

@@ -81,6 +81,7 @@ export function AuditForm({ userPlan = 'free', defaultUrl = '', defaultDescripti
   const [depth, setDepth] = useState<Depth>(defaultDepth)
   const [platform, setPlatform] = useState<TargetPlatform>(defaultPlatform)
   const [isPublic, setIsPublic] = useState(true)
+  const [appIconUrl, setAppIconUrl] = useState('')
   const [error, setError] = useState('')
   const [isSubmitting, setIsSubmitting] = useState(false)
 
@@ -133,6 +134,7 @@ export function AuditForm({ userPlan = 'free', defaultUrl = '', defaultDescripti
           depth,
           target_platform: platform,
           is_public: isPublic,
+          ...(appIconUrl.trim() ? { app_icon_url: appIconUrl.trim() } : {}),
         }),
       })
 
@@ -308,17 +310,48 @@ export function AuditForm({ userPlan = 'free', defaultUrl = '', defaultDescripti
       )}
 
       {/* Leaderboard opt-in */}
-      <label className="flex items-center gap-3 cursor-pointer select-none">
-        <input
-          type="checkbox"
-          checked={isPublic}
-          onChange={e => setIsPublic(e.target.checked)}
-          className="w-4 h-4 rounded accent-neon-green cursor-pointer"
-        />
-        <span className="text-sm text-gray-400">
-          Include in <a href="/leaderboard" className="text-neon-green hover:underline" target="_blank" rel="noopener noreferrer">public leaderboard</a>
-        </span>
-      </label>
+      <div className="space-y-3">
+        <label className="flex items-center gap-3 cursor-pointer select-none">
+          <input
+            type="checkbox"
+            checked={isPublic}
+            onChange={e => setIsPublic(e.target.checked)}
+            className="w-4 h-4 rounded accent-neon-green cursor-pointer"
+          />
+          <span className="text-sm text-gray-400">
+            Include in <a href="/leaderboard" className="text-neon-green hover:underline" target="_blank" rel="noopener noreferrer">public leaderboard</a>
+          </span>
+        </label>
+
+        {isPublic && (
+          <div className="flex items-center gap-3 pl-7">
+            {appIconUrl ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img
+                src={appIconUrl}
+                alt="icon preview"
+                className="w-8 h-8 rounded object-cover border border-dark-400 shrink-0"
+                onError={e => { (e.target as HTMLImageElement).style.display = 'none' }}
+              />
+            ) : (
+              <div className="w-8 h-8 rounded border border-dark-400 bg-dark-700 shrink-0 flex items-center justify-center text-gray-600 text-xs">
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5}
+                    d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                </svg>
+              </div>
+            )}
+            <input
+              type="url"
+              value={appIconUrl}
+              onChange={e => setAppIconUrl(e.target.value)}
+              placeholder="App icon / logo URL (optional)"
+              className="flex-1 px-3 py-2 bg-dark-700 border border-dark-400 rounded-lg text-white placeholder-gray-600 focus:outline-none focus:border-neon-green/50 focus:ring-1 focus:ring-neon-green/50 text-sm transition-colors"
+              disabled={isSubmitting}
+            />
+          </div>
+        )}
+      </div>
 
       {/* Submit */}
       <button

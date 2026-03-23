@@ -177,6 +177,7 @@ CREATE INDEX IF NOT EXISTS api_keys_key_hash_idx ON public.api_keys(key_hash);
 -- ============================================================
 ALTER TABLE public.audit_jobs ADD COLUMN IF NOT EXISTS callback_url TEXT;
 ALTER TABLE public.audit_jobs ADD COLUMN IF NOT EXISTS is_public BOOLEAN NOT NULL DEFAULT true;
+ALTER TABLE public.audit_jobs ADD COLUMN IF NOT EXISTS app_icon_url TEXT;
 
 -- ============================================================
 -- AUDIT REPORTS — change ship_score to numeric for 2 decimal places

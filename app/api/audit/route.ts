@@ -95,7 +95,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Invalid JSON body' }, { status: 400 })
     }
 
-    const { url, description, flows, depth, callback_url, target_platform, is_public } = body
+    const { url, description, flows, depth, callback_url, target_platform, is_public, app_icon_url } = body
 
     if (!url || typeof url !== 'string') {
       return NextResponse.json({ error: 'url is required' }, { status: 400 })
@@ -229,6 +229,7 @@ export async function POST(req: NextRequest) {
         depth: auditDepth,
         target_platform: auditPlatform,
         is_public: is_public !== false,
+        ...(app_icon_url && typeof app_icon_url === 'string' ? { app_icon_url: app_icon_url.trim() } : {}),
         status: 'queued',
         ...(callbackUrl ? { callback_url: callbackUrl } : {}),
       })
@@ -311,7 +312,7 @@ async function handleDockerPost(req: NextRequest) {
     return NextResponse.json({ error: 'Invalid JSON body' }, { status: 400 })
   }
 
-  const { url, description, flows, depth, callback_url, target_platform, is_public } = body
+  const { url, description, flows, depth, callback_url, target_platform, is_public, app_icon_url } = body
 
   if (!url || typeof url !== 'string') {
     return NextResponse.json({ error: 'url is required' }, { status: 400 })
@@ -363,6 +364,7 @@ async function handleDockerPost(req: NextRequest) {
     depth: auditDepth as 'quick' | 'standard' | 'deep',
     target_platform: auditPlatform,
     is_public: is_public !== false,
+    app_icon_url: app_icon_url && typeof app_icon_url === 'string' ? (app_icon_url as string).trim() : undefined,
     callback_url: callbackUrl,
   })
 

@@ -11,6 +11,15 @@ type Entry = {
   description: string
   score: number
   verdict: 'yes' | 'no' | 'conditional'
+  app_icon_url?: string | null
+}
+
+function getScoreColor(score: number): string {
+  if (score >= 90) return '#00FF88'
+  if (score >= 70) return '#7CFF5A'
+  if (score >= 50) return '#FFD60A'
+  if (score >= 30) return '#FF9500'
+  return '#FF3B30'
 }
 
 async function getEntries(): Promise<Entry[]> {
@@ -25,7 +34,7 @@ async function getEntries(): Promise<Entry[]> {
           if (!report) return []
           let hostname = j.url
           try { hostname = new URL(j.url).hostname } catch { /* leave as-is */ }
-          return [{ hostname, description: j.description.slice(0, 120), score: report.ship_score, verdict: report.ship_verdict }]
+          return [{ hostname, description: j.description.slice(0, 120), score: report.ship_score, verdict: report.ship_verdict, app_icon_url: j.app_icon_url ?? null }]
         })
         .sort((a, b) => b.score - a.score)
         .slice(0, 20)
@@ -36,17 +45,17 @@ async function getEntries(): Promise<Entry[]> {
 
     const { data } = await supabase
       .from('audit_reports')
-      .select('ship_score, ship_verdict, audit_jobs!inner(url, description, is_public, created_at)')
+      .select('ship_score, ship_verdict, audit_jobs!inner(url, description, is_public, created_at, app_icon_url)')
       .eq('audit_jobs.is_public', true)
       .gte('audit_jobs.created_at', cutoff)
       .order('ship_score', { ascending: false })
       .limit(20)
 
     return (data ?? []).map(r => {
-      const job = r.audit_jobs as unknown as { url: string; description: string }
+      const job = r.audit_jobs as unknown as { url: string; description: string; app_icon_url?: string }
       let hostname = job.url
       try { hostname = new URL(job.url).hostname } catch { /* leave as-is */ }
-      return { hostname, description: job.description.slice(0, 120), score: r.ship_score, verdict: r.ship_verdict }
+      return { hostname, description: job.description.slice(0, 120), score: r.ship_score, verdict: r.ship_verdict, app_icon_url: job.app_icon_url ?? null }
     })
   } catch {
     return []
@@ -102,9 +111,26 @@ export default async function LeaderboardPage() {
                 key={i}
                 className="grid grid-cols-[2fr_3fr_auto_auto] gap-4 px-5 py-4 border-b border-dark-700 last:border-0 hover:bg-dark-800/50 transition-colors items-center"
               >
-                {/* Rank + hostname */}
+                {/* Rank + icon + hostname */}
                 <div className="flex items-center gap-3 min-w-0">
                   <span className="text-xs text-gray-600 w-5 shrink-0">{i + 1}</span>
+                  {entry.app_icon_url ? (
+                    /* eslint-disable-next-line @next/next/no-img-element */
+                    <img
+                      src={entry.app_icon_url}
+                      alt=""
+                      width={24}
+                      height={24}
+                      className="w-6 h-6 rounded object-cover shrink-0"
+                      referrerPolicy="no-referrer"
+                    />
+                  ) : (
+                    <span
+                      className="w-6 h-6 rounded flex items-center justify-center text-xs font-bold shrink-0 bg-dark-600 text-gray-400"
+                    >
+                      {entry.hostname.charAt(0).toUpperCase()}
+                    </span>
+                  )}
                   <span className="text-white font-semibold truncate text-sm">{entry.hostname}</span>
                 </div>
 
@@ -112,7 +138,10 @@ export default async function LeaderboardPage() {
                 <p className="text-gray-400 text-xs truncate">{entry.description}</p>
 
                 {/* Score */}
-                <span className="text-neon-green font-bold text-sm tabular-nums text-right">
+                <span
+                  className="font-bold text-sm tabular-nums text-right"
+                  style={{ color: getScoreColor(Number(entry.score)) }}
+                >
                   {Number(entry.score).toFixed(2)}
                 </span>
 

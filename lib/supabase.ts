@@ -35,6 +35,7 @@ export type AuditJob = {
   target_platform: TargetPlatform   // Primary device target — affects mobile score weighting
   status: 'queued' | 'running' | 'complete' | 'failed'
   is_public: boolean                // Whether this audit appears in the public leaderboard
+  app_icon_url?: string    // Optional URL to app logo/icon shown on the leaderboard
   callback_url?: string    // Optional webhook URL — fired on completion or failure
   error_message?: string
   worker_id?: string
