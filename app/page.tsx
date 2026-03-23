@@ -330,26 +330,24 @@ export default async function LandingPage() {
               How CanIShip Differs From Other Tools
             </h3>
           </div>
-          <div className="border border-dock-600 overflow-x-auto">
-            <div className="min-w-[480px]">
-              <div className="grid grid-cols-3 bg-dock-800 border-b-2 border-dock-100 text-xs uppercase tracking-widest text-dock-300 px-4 py-2" style={{ fontFamily: "'Barlow Condensed', sans-serif" }}>
-                <span>Criterion</span>
-                <span className="text-amber">CanIShip</span>
-                <span>Other QA Tools</span>
-              </div>
-              {differentiatorsRows.map(({ field, caniship, others }, i) => (
-                <div
-                  key={field}
-                  className={`grid grid-cols-3 px-4 py-3 text-sm ${i % 2 === 0 ? 'bg-dock-900' : 'bg-dock-800'} ${i < differentiatorsRows.length - 1 ? 'border-b border-dock-600' : ''}`}
-                >
-                  <span className="text-dock-400 text-xs uppercase tracking-wide" style={{ fontFamily: "'Barlow Condensed', sans-serif" }}>
-                    {field}
-                  </span>
-                  <span className="text-dock-100">{caniship}</span>
-                  <span className="text-dock-500">{others}</span>
-                </div>
-              ))}
+          <div className="border border-dock-600">
+            <div className="grid grid-cols-2 md:grid-cols-3 bg-dock-800 border-b-2 border-dock-100 text-xs uppercase tracking-widest text-dock-300 px-4 py-2" style={{ fontFamily: "'Barlow Condensed', sans-serif" }}>
+              <span>Criterion</span>
+              <span className="text-amber">CanIShip</span>
+              <span className="hidden md:block">Other QA Tools</span>
             </div>
+            {differentiatorsRows.map(({ field, caniship, others }, i) => (
+              <div
+                key={field}
+                className={`grid grid-cols-2 md:grid-cols-3 px-4 py-3 text-sm ${i % 2 === 0 ? 'bg-dock-900' : 'bg-dock-800'} ${i < differentiatorsRows.length - 1 ? 'border-b border-dock-600' : ''}`}
+              >
+                <span className="text-dock-400 text-xs uppercase tracking-wide" style={{ fontFamily: "'Barlow Condensed', sans-serif" }}>
+                  {field}
+                </span>
+                <span className="text-dock-100">{caniship}</span>
+                <span className="hidden md:block text-dock-500">{others}</span>
+              </div>
+            ))}
           </div>
         </div>
       </section>
@@ -527,7 +525,7 @@ export default async function LandingPage() {
                 {plan.href ? (
                   <Link
                     href={plan.href}
-                    className={`block text-center py-2.5 text-xs font-bold uppercase tracking-widest transition-colors ${
+                    className={`min-h-[44px] flex items-center justify-center text-xs font-bold uppercase tracking-widest transition-colors ${
                       plan.highlight
                         ? 'bg-amber text-dock-900 hover:bg-amber-dim'
                         : 'border border-dock-500 text-dock-300 hover:border-dock-300 hover:text-dock-100'
@@ -539,7 +537,7 @@ export default async function LandingPage() {
                 ) : (
                   <Link
                     href="/signup"
-                    className={`block text-center py-2.5 text-xs font-bold uppercase tracking-widest transition-colors ${
+                    className={`min-h-[44px] flex items-center justify-center text-xs font-bold uppercase tracking-widest transition-colors ${
                       plan.highlight
                         ? 'bg-amber text-dock-900 hover:bg-amber-dim'
                         : 'border border-dock-500 text-dock-300 hover:border-dock-300 hover:text-dock-100'
@@ -597,7 +595,7 @@ export default async function LandingPage() {
                 href="https://www.linkedin.com/company/actvli"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="text-xs text-dock-500 hover:text-dock-300 uppercase tracking-widest transition-colors"
+                className="min-h-[44px] inline-flex items-center text-xs text-dock-500 hover:text-dock-300 uppercase tracking-widest transition-colors"
                 style={{ fontFamily: "'Barlow Condensed', sans-serif" }}
               >
                 Äctvli on LinkedIn ↗
