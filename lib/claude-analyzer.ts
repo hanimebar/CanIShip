@@ -314,7 +314,7 @@ function buildOutputSchema(tier: ReportTier): string {
 
 \`\`\`json
 {
-  "overall_score": <0-100>,
+  "overall_score": <float 0.00–100.00, two decimal places e.g. 87.43>,
   "ship_verdict": "<yes|no|conditional>",
   "critical_bugs": [{ "title": "", "description": "", "location": "", "severity": "critical", "remediation": "" }],
   "ux_issues": [{ "title": "", "description": "", "location": "", "severity": "<high|medium|low>", "remediation": "" }],
@@ -337,7 +337,7 @@ function buildOutputSchema(tier: ReportTier): string {
 
 \`\`\`json
 {
-  "overall_score": <0-100>,
+  "overall_score": <float 0.00–100.00, two decimal places e.g. 87.43>,
   "ship_verdict": "<yes|no|conditional>",
   "critical_bugs": [{
     "title": "",
@@ -397,7 +397,7 @@ Be honest about human_review_required. If a security issue requires manual penet
 
 \`\`\`json
 {
-  "overall_score": <0-100>,
+  "overall_score": <float 0.00–100.00, two decimal places e.g. 87.43>,
   "ship_verdict": "<yes|no|conditional>",
   "critical_bugs": [{
     "title": "",
@@ -471,7 +471,7 @@ function formatMs(value?: number): string {
 
 function validateAndNormalizeReport(report: Partial<ClaudeReport>): ClaudeReport {
   return {
-    overall_score:             Math.min(100, Math.max(0, report.overall_score ?? 50)),
+    overall_score:             Math.round(Math.min(100, Math.max(0, report.overall_score ?? 50)) * 100) / 100,
     ship_verdict:              (['yes', 'no', 'conditional'].includes(report.ship_verdict as string) ? report.ship_verdict : 'conditional') as 'yes' | 'no' | 'conditional',
     critical_bugs:             Array.isArray(report.critical_bugs)             ? report.critical_bugs             : [],
     ux_issues:                 Array.isArray(report.ux_issues)                 ? report.ux_issues                 : [],

@@ -80,6 +80,7 @@ export function AuditForm({ userPlan = 'free', defaultUrl = '', defaultDescripti
   const [flows, setFlows] = useState(defaultFlows)
   const [depth, setDepth] = useState<Depth>(defaultDepth)
   const [platform, setPlatform] = useState<TargetPlatform>(defaultPlatform)
+  const [isPublic, setIsPublic] = useState(true)
   const [error, setError] = useState('')
   const [isSubmitting, setIsSubmitting] = useState(false)
 
@@ -131,6 +132,7 @@ export function AuditForm({ userPlan = 'free', defaultUrl = '', defaultDescripti
           flows: flowList,
           depth,
           target_platform: platform,
+          is_public: isPublic,
         }),
       })
 
@@ -304,6 +306,19 @@ export function AuditForm({ userPlan = 'free', defaultUrl = '', defaultDescripti
           {error}
         </div>
       )}
+
+      {/* Leaderboard opt-in */}
+      <label className="flex items-center gap-3 cursor-pointer select-none">
+        <input
+          type="checkbox"
+          checked={isPublic}
+          onChange={e => setIsPublic(e.target.checked)}
+          className="w-4 h-4 rounded accent-neon-green cursor-pointer"
+        />
+        <span className="text-sm text-gray-400">
+          Include in <a href="/leaderboard" className="text-neon-green hover:underline" target="_blank" rel="noopener noreferrer">public leaderboard</a>
+        </span>
+      </label>
 
       {/* Submit */}
       <button

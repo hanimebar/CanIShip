@@ -173,9 +173,15 @@ CREATE INDEX IF NOT EXISTS api_keys_user_id_idx ON public.api_keys(user_id);
 CREATE INDEX IF NOT EXISTS api_keys_key_hash_idx ON public.api_keys(key_hash);
 
 -- ============================================================
--- AUDIT JOBS — add callback_url column
+-- AUDIT JOBS — incremental column additions
 -- ============================================================
 ALTER TABLE public.audit_jobs ADD COLUMN IF NOT EXISTS callback_url TEXT;
+ALTER TABLE public.audit_jobs ADD COLUMN IF NOT EXISTS is_public BOOLEAN NOT NULL DEFAULT true;
+
+-- ============================================================
+-- AUDIT REPORTS — change ship_score to numeric for 2 decimal places
+-- Run once: ALTER TABLE public.audit_reports ALTER COLUMN ship_score TYPE NUMERIC(5,2);
+-- ============================================================
 
 -- ============================================================
 -- FUNCTION: claim_next_audit_job
