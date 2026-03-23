@@ -106,8 +106,15 @@ export async function runLighthouseAudit(options: LighthouseOptions): Promise<Li
         '--disable-dev-shm-usage',
         '--disable-gpu',
         '--no-zygote',
+        '--single-process',
         '--disable-extensions',
         '--disable-component-extensions-with-background-pages',
+        '--disable-background-networking',
+        '--disable-default-apps',
+        '--disable-sync',
+        '--metrics-recording-only',
+        '--mute-audio',
+        '--no-first-run',
       ],
     })
 
