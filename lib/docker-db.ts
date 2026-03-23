@@ -31,7 +31,13 @@ function getDb(): SQLiteDB {
   if (_db) return _db
 
   // eslint-disable-next-line @typescript-eslint/no-require-imports
-  const Database = require('better-sqlite3')
+  const Database = require(/* webpackIgnore: true */ 'better-sqlite3')
+  if (typeof Database !== 'function') {
+    throw new Error(
+      'better-sqlite3 failed to load. This usually means DOCKER_MODE=true is set outside of a Docker container. ' +
+      'Remove DOCKER_MODE from your environment variables if you are not running the Docker self-hosted image.'
+    )
+  }
 
   const dbPath = process.env.SQLITE_PATH || '/data/caniship.db'
 
