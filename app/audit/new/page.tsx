@@ -55,7 +55,7 @@ export default async function NewAuditPage({
             <img src="/logo.svg" alt="CanIShip" height={32} style={{ height: 32, width: 'auto' }} />
           </Link>
           <div className="flex items-center gap-4">
-            <Link href="/dashboard" className="text-sm text-gray-400 hover:text-white transition-colors">
+            <Link href="/dashboard" className="min-h-[44px] flex items-center text-sm text-gray-400 hover:text-white transition-colors">
               Dashboard
             </Link>
           </div>
@@ -78,7 +78,7 @@ export default async function NewAuditPage({
             </p>
             <Link
               href="/pricing"
-              className="inline-block px-6 py-2.5 bg-neon-green text-dark-900 font-bold text-sm rounded-lg hover:bg-neon-green-dim transition-colors"
+              className="inline-flex items-center min-h-[44px] px-6 bg-neon-green text-dark-900 font-bold text-sm rounded-lg hover:bg-neon-green-dim transition-colors"
             >
               Upgrade to continue
             </Link>

@@ -54,11 +54,11 @@ export default async function SettingsPage() {
             <img src="/logo.svg" alt="CanIShip" height={32} style={{ height: 32, width: 'auto' }} />
           </Link>
           <div className="flex items-center gap-4">
-            <Link href="/dashboard" className="text-sm text-gray-400 hover:text-white transition-colors">
+            <Link href="/dashboard" className="min-h-[44px] flex items-center text-sm text-gray-400 hover:text-white transition-colors">
               Dashboard
             </Link>
             <form action="/api/auth/signout" method="POST">
-              <button type="submit" className="text-sm text-gray-400 hover:text-white transition-colors">
+              <button type="submit" className="min-h-[44px] flex items-center text-sm text-gray-400 hover:text-white transition-colors">
                 Sign out
               </button>
             </form>

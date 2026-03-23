@@ -93,11 +93,11 @@ export default async function DashboardPage({
           </Link>
           <div className="flex items-center gap-4">
             <span className="text-xs font-mono text-gray-500 capitalize">{plan} plan</span>
-            <Link href="/settings" className="text-sm text-gray-400 hover:text-white transition-colors">
+            <Link href="/settings" className="min-h-[44px] flex items-center text-sm text-gray-400 hover:text-white transition-colors">
               Settings
             </Link>
             <form action="/api/auth/signout" method="POST">
-              <button type="submit" className="text-sm text-gray-400 hover:text-white transition-colors">
+              <button type="submit" className="min-h-[44px] flex items-center text-sm text-gray-400 hover:text-white transition-colors">
                 Sign out
               </button>
             </form>
@@ -142,7 +142,7 @@ export default async function DashboardPage({
           </div>
           <Link
             href="/audit/new"
-            className="px-5 py-2.5 bg-neon-green text-dark-900 font-bold text-sm rounded-lg hover:bg-neon-green-dim transition-colors font-mono-brand"
+            className="min-h-[44px] flex items-center px-5 bg-neon-green text-dark-900 font-bold text-sm rounded-lg hover:bg-neon-green-dim transition-colors font-mono-brand"
           >
             + New Audit
           </Link>
