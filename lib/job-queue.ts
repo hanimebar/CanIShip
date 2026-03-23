@@ -10,6 +10,7 @@
  * be bundled by webpack.
  */
 
+import { createHmac } from 'crypto'
 import { createSupabaseServiceClient, type AuditJob, type ReportTier } from './supabase'
 
 const REDIS_URL = process.env.REDIS_URL
@@ -39,35 +40,40 @@ export function stopWorker() {
 
 async function processNextJob() {
   const supabase = createSupabaseServiceClient()
-
-  const { data: job, error } = await supabase
-    .from('audit_jobs')
-    .select('*')
-    .eq('status', 'queued')
-    .order('created_at', { ascending: true })
-    .limit(1)
-    .single()
-
-  if (error || !job) return
-
   const workerId = `worker-${process.pid}-${Date.now()}`
 
-  const { error: updateError } = await supabase
-    .from('audit_jobs')
-    .update({
-      status: 'running',
-      worker_id: workerId,
-      started_at: new Date().toISOString(),
-    })
-    .eq('id', job.id)
-    .eq('status', 'queued')
+  // Atomic claim via Postgres function — uses FOR UPDATE SKIP LOCKED to prevent
+  // multiple workers from picking the same job.
+  //
+  // SQL to deploy in Supabase (run once):
+  //
+  //   CREATE OR REPLACE FUNCTION claim_next_audit_job(p_worker_id TEXT)
+  //   RETURNS SETOF audit_jobs LANGUAGE sql AS $$
+  //     UPDATE audit_jobs
+  //     SET status = 'running',
+  //         worker_id = p_worker_id,
+  //         started_at = NOW()
+  //     WHERE id = (
+  //       SELECT id FROM audit_jobs
+  //       WHERE status = 'queued'
+  //       ORDER BY created_at ASC
+  //       LIMIT 1
+  //       FOR UPDATE SKIP LOCKED
+  //     )
+  //     RETURNING *;
+  //   $$;
+  //
+  const { data: jobs, error } = await supabase
+    .rpc('claim_next_audit_job', { p_worker_id: workerId })
 
-  if (updateError) return
+  // RPC returns 0 rows (no job) or 1 row (claimed job)
+  if (error || !jobs || jobs.length === 0) return
 
+  const job = jobs[0] as AuditJob
   console.log(`[Worker] Processing job ${job.id} for URL: ${job.url}`)
 
   try {
-    await runAuditPipeline(job as AuditJob)
+    await runAuditPipeline(job)
   } catch (err) {
     console.error(`[Worker] Job ${job.id} failed:`, err)
     await supabase
@@ -78,6 +84,8 @@ async function processNextJob() {
         completed_at: new Date().toISOString(),
       })
       .eq('id', job.id)
+    // Fire webhook on failure too — caller may want to know
+    await fireWebhook(job, { status: 'failed', error: err instanceof Error ? err.message : String(err) })
   }
 }
 
@@ -196,15 +204,25 @@ async function runAuditPipeline(job: AuditJob) {
     ship_verdict: finalReport.ship_verdict,
   })
 
+  const completedAt = new Date().toISOString()
+
   await supabase
     .from('audit_jobs')
     .update({
       status: 'complete',
-      completed_at: new Date().toISOString(),
+      completed_at: completedAt,
     })
     .eq('id', job.id)
 
   console.log(`[Worker] Job ${job.id} complete. Score: ${finalReport.overall_score}`)
+
+  // Fire webhook if caller provided a callback_url
+  await fireWebhook(job, {
+    status: 'complete',
+    ship_score: finalReport.overall_score,
+    ship_verdict: finalReport.ship_verdict,
+    completed_at: completedAt,
+  })
 }
 
 // ============================================================
@@ -265,6 +283,54 @@ export async function enqueueAuditJob(job: AuditJob) {
     attempts: 2,
     backoff: { type: 'exponential', delay: 5000 },
   })
+}
+
+// ============================================================
+// WEBHOOK DELIVERY
+// ============================================================
+
+/**
+ * Fire a webhook to the job's callback_url (if set).
+ * Signed with HMAC-SHA256 using WEBHOOK_SECRET env var.
+ * Non-fatal — a delivery failure never affects the audit result.
+ *
+ * Payload shape:
+ *   { event, job_id, url, status, ship_score?, ship_verdict?, completed_at?, error? }
+ *
+ * Signature header: X-CanIShip-Signature: sha256=<hex>
+ * Consumers verify: HMAC-SHA256(secret, rawBody) === signature
+ */
+async function fireWebhook(
+  job: AuditJob,
+  data: Record<string, unknown>,
+): Promise<void> {
+  const callbackUrl = (job as AuditJob & { callback_url?: string }).callback_url
+  if (!callbackUrl) return
+
+  const payload = JSON.stringify({
+    event: data.status === 'complete' ? 'audit.complete' : 'audit.failed',
+    job_id: job.id,
+    url: job.url,
+    ...data,
+  })
+
+  const secret = process.env.WEBHOOK_SECRET || ''
+  const signature = `sha256=${createHmac('sha256', secret).update(payload).digest('hex')}`
+
+  try {
+    await fetch(callbackUrl, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-CanIShip-Signature': signature,
+        'User-Agent': 'CanIShip-Webhook/1.0',
+      },
+      body: payload,
+      signal: AbortSignal.timeout(10000),
+    })
+  } catch (err) {
+    console.warn(`[Worker] Webhook delivery failed for job ${job.id}:`, err)
+  }
 }
 
 function sleep(ms: number) {

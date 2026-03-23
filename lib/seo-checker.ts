@@ -41,9 +41,48 @@ export type SeoResults = {
   hasRobotsTxt: boolean
   hasSitemap: boolean
   imagesWithoutAlt: number
+  structuredData: {
+    hasJsonLd: boolean
+    types: string[]       // e.g. ["WebSite", "Organization", "Product"]
+  }
+  redirectChain: {
+    hops: number
+    chain: string[]
+  } | null
   issues: SeoIssue[]
   score: number
   error?: string
+}
+
+async function detectRedirectChain(
+  url: string,
+): Promise<{ hops: number; chain: string[] } | null> {
+  let current = url
+  const chain: string[] = [current]
+
+  try {
+    for (let i = 0; i < 8; i++) {
+      const res = await fetch(current, {
+        method: 'HEAD',
+        redirect: 'manual', // Do not follow — capture each hop
+        signal: AbortSignal.timeout(5000),
+        headers: { 'User-Agent': 'CanIShip-SEO-Checker/1.0' },
+      })
+
+      if (res.status >= 300 && res.status < 400) {
+        const location = res.headers.get('location')
+        if (!location) break
+        current = location.startsWith('http')
+          ? location
+          : new URL(location, current).href
+        chain.push(current)
+      } else {
+        break
+      }
+    }
+  } catch { /* non-fatal */ }
+
+  return chain.length > 1 ? { hops: chain.length - 1, chain } : null
 }
 
 function extractMeta(html: string, name: string): string | null {
@@ -90,12 +129,26 @@ export async function runSeoChecks(options: SeoOptions): Promise<SeoResults> {
     hasRobotsTxt: false,
     hasSitemap: false,
     imagesWithoutAlt: 0,
+    structuredData: { hasJsonLd: false, types: [] },
+    redirectChain: null,
     issues: [],
     score: 0,
   }
 
   try {
     const origin = new URL(url).origin
+
+    // ── Redirect chain ────────────────────────────────────────────
+    const redirectChain = await detectRedirectChain(url)
+    if (redirectChain && redirectChain.hops >= 2) {
+      issues.push({
+        title: `Redirect chain detected (${redirectChain.hops} hop${redirectChain.hops > 1 ? 's' : ''})`,
+        description: `The URL goes through ${redirectChain.hops} redirect(s) before reaching the final destination. Each hop adds latency and dilutes PageRank passed through the chain.`,
+        severity: redirectChain.hops >= 3 ? 'high' : 'medium',
+        remediation: 'Update all inbound links to point directly to the final destination URL. Avoid chaining redirects — each redirect wastes a round-trip.',
+        evidence: redirectChain.chain.slice(0, 4).join(' → '),
+      })
+    }
 
     // Fetch page HTML
     const res = await fetch(url, {
@@ -274,6 +327,40 @@ export async function runSeoChecks(options: SeoOptions): Promise<SeoResults> {
       })
     }
 
+    // ── Structured data (JSON-LD) ───────────────────────────────────
+    const jsonLdRegex = /<script[^>]+type=["']application\/ld\+json["'][^>]*>([\s\S]*?)<\/script>/gi
+    const jsonLdMatches: string[] = []
+    let jldMatch: RegExpExecArray | null
+    while ((jldMatch = jsonLdRegex.exec(html)) !== null) jsonLdMatches.push(jldMatch[1])
+
+    const jsonLdTypes: string[] = []
+    for (const raw of jsonLdMatches) {
+      try {
+        const parsed = JSON.parse(raw.trim())
+        const items = Array.isArray(parsed) ? parsed : [parsed]
+        for (const item of items) {
+          if (item['@type']) {
+            const types = Array.isArray(item['@type']) ? item['@type'] : [item['@type']]
+            jsonLdTypes.push(...types)
+          }
+        }
+      } catch { /* malformed JSON-LD */ }
+    }
+
+    const structuredData = {
+      hasJsonLd: jsonLdMatches.length > 0,
+      types: Array.from(new Set(jsonLdTypes)),
+    }
+
+    if (!structuredData.hasJsonLd) {
+      issues.push({
+        title: 'No structured data (JSON-LD) found',
+        description: 'No JSON-LD schema.org markup was detected. Structured data enables rich results in Google Search (star ratings, FAQs, breadcrumbs, product info) and helps search engines understand your content.',
+        severity: 'low',
+        remediation: 'Add at least a WebSite schema with a sitelinks searchbox, and Organization or LocalBusiness schema. For product pages add Product schema. Use Google\'s Rich Results Test to validate.',
+      })
+    }
+
     // ── robots.txt ─────────────────────────────────────────────────
     let hasRobotsTxt = false
     try {
@@ -347,6 +434,8 @@ export async function runSeoChecks(options: SeoOptions): Promise<SeoResults> {
       hasRobotsTxt,
       hasSitemap,
       imagesWithoutAlt,
+      structuredData,
+      redirectChain,
       issues,
       score,
     }

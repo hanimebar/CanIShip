@@ -31,6 +31,7 @@ export type AuditJob = {
   flows: string[]
   depth: 'quick' | 'standard' | 'deep'
   status: 'queued' | 'running' | 'complete' | 'failed'
+  callback_url?: string    // Optional webhook URL — fired on completion or failure
   error_message?: string
   worker_id?: string
   started_at?: string

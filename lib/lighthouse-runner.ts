@@ -45,6 +45,15 @@ export type LighthouseResults = {
     bestPractices?: LighthouseCategory
     seo?: LighthouseCategory
   }
+  // Mobile Lighthouse scores (simulated throttling, Moto G4 emulation)
+  mobileCategories?: {
+    performance?: LighthouseCategory
+    accessibility?: LighthouseCategory
+    bestPractices?: LighthouseCategory
+    seo?: LighthouseCategory
+  }
+  mobileCoreWebVitals?: CoreWebVitals
+  mobileScore?: number
   coreWebVitals: CoreWebVitals
   opportunities: LighthouseIssue[]
   diagnostics: LighthouseIssue[]
@@ -62,6 +71,8 @@ export async function runLighthouseAudit(options: LighthouseOptions): Promise<Li
     diagnostics: [],
     score: 0,
   }
+
+  type LhrAudit = { score: number | null; title: string; description: string; displayValue?: string; details?: { type: string } }
 
   try {
     const remainingMs = deadline - Date.now()
@@ -94,7 +105,8 @@ export async function runLighthouseAudit(options: LighthouseOptions): Promise<Li
     })
 
     try {
-      const runnerResult = await lighthouseFn(url, {
+      // ── Desktop run ────────────────────────────────────────────
+      const desktopResult = await lighthouseFn(url, {
         logLevel: 'error',
         output: 'json',
         port: chrome.port,
@@ -112,25 +124,17 @@ export async function runLighthouseAudit(options: LighthouseOptions): Promise<Li
         },
       })
 
-      if (!runnerResult?.lhr) {
+      if (!desktopResult?.lhr) {
         return { ...emptyResults, error: 'Lighthouse returned no results' }
       }
 
-      const { lhr } = runnerResult
+      const lhr = desktopResult.lhr
 
       const categories: LighthouseResults['categories'] = {
-        performance: lhr.categories.performance
-          ? { score: (lhr.categories.performance.score ?? 0) * 100, title: 'Performance' }
-          : undefined,
-        accessibility: lhr.categories.accessibility
-          ? { score: (lhr.categories.accessibility.score ?? 0) * 100, title: 'Accessibility' }
-          : undefined,
-        bestPractices: lhr.categories['best-practices']
-          ? { score: (lhr.categories['best-practices'].score ?? 0) * 100, title: 'Best Practices' }
-          : undefined,
-        seo: lhr.categories.seo
-          ? { score: (lhr.categories.seo.score ?? 0) * 100, title: 'SEO' }
-          : undefined,
+        performance:  lhr.categories.performance      ? { score: (lhr.categories.performance.score ?? 0) * 100,      title: 'Performance' }   : undefined,
+        accessibility: lhr.categories.accessibility   ? { score: (lhr.categories.accessibility.score ?? 0) * 100,   title: 'Accessibility' } : undefined,
+        bestPractices: lhr.categories['best-practices']? { score: (lhr.categories['best-practices'].score ?? 0) * 100, title: 'Best Practices' }: undefined,
+        seo:           lhr.categories.seo             ? { score: (lhr.categories.seo.score ?? 0) * 100,             title: 'SEO' }           : undefined,
       }
 
       const audits = lhr.audits
@@ -142,39 +146,78 @@ export async function runLighthouseAudit(options: LighthouseOptions): Promise<Li
         fcp: audits['first-contentful-paint']?.numericValue,
         tti: audits['interactive']?.numericValue,
         tbt: audits['total-blocking-time']?.numericValue,
-        si: audits['speed-index']?.numericValue,
+        si:  audits['speed-index']?.numericValue,
       }
 
       const opportunities: LighthouseIssue[] = []
       const diagnostics: LighthouseIssue[] = []
 
-      type LhrAudit = { score: number | null; title: string; description: string; displayValue?: string; details?: { type: string } }
       for (const [id, audit] of Object.entries(audits as Record<string, LhrAudit>)) {
         if (!audit.score || audit.score >= 0.9) continue
         if (audit.details?.type === 'opportunity') {
-          opportunities.push({
-            id,
-            title: audit.title,
-            description: (audit.description || '').split('\n')[0],
-            score: audit.score,
-            displayValue: audit.displayValue,
-            severity: audit.score < 0.5 ? 'error' : 'warning',
-          })
+          opportunities.push({ id, title: audit.title, description: (audit.description || '').split('\n')[0], score: audit.score, displayValue: audit.displayValue, severity: audit.score < 0.5 ? 'error' : 'warning' })
         } else if (audit.details?.type === 'table' || audit.details?.type === 'list') {
-          diagnostics.push({
-            id,
-            title: audit.title,
-            description: (audit.description || '').split('\n')[0],
-            score: audit.score,
-            displayValue: audit.displayValue,
-            severity: audit.score < 0.5 ? 'error' : 'warning',
-          })
+          diagnostics.push({ id, title: audit.title, description: (audit.description || '').split('\n')[0], score: audit.score, displayValue: audit.displayValue, severity: audit.score < 0.5 ? 'error' : 'warning' })
         }
       }
 
       const score = Math.round((lhr.categories.performance?.score ?? 0) * 100)
 
-      return { categories, coreWebVitals, opportunities, diagnostics, score }
+      // ── Mobile run (only if deadline allows ≥ 45s more) ───────
+      let mobileCategories: LighthouseResults['mobileCategories']
+      let mobileCoreWebVitals: CoreWebVitals | undefined
+      let mobileScore: number | undefined
+
+      const remainingForMobile = deadline - Date.now()
+      if (remainingForMobile >= 45000) {
+        try {
+          const mobileResult = await lighthouseFn(url, {
+            logLevel: 'error',
+            output: 'json',
+            port: chrome.port,
+            onlyCategories: ['performance', 'accessibility', 'best-practices', 'seo'],
+            settings: {
+              formFactor: 'mobile',
+              screenEmulation: {
+                mobile: true,
+                width: 390,
+                height: 844,
+                deviceScaleFactor: 3,
+                disabled: false,
+              },
+              throttlingMethod: 'simulate',
+              // Simulate a mid-tier Android device (approx Moto G Power)
+              throttling: {
+                rttMs: 40,
+                throughputKbps: 10240,
+                cpuSlowdownMultiplier: 4,
+              },
+            },
+          })
+
+          if (mobileResult?.lhr) {
+            const mlhr = mobileResult.lhr
+            mobileCategories = {
+              performance:   mlhr.categories.performance       ? { score: (mlhr.categories.performance.score ?? 0) * 100,       title: 'Performance (Mobile)' }    : undefined,
+              accessibility: mlhr.categories.accessibility     ? { score: (mlhr.categories.accessibility.score ?? 0) * 100,     title: 'Accessibility (Mobile)' }  : undefined,
+              bestPractices: mlhr.categories['best-practices'] ? { score: (mlhr.categories['best-practices'].score ?? 0) * 100, title: 'Best Practices (Mobile)' } : undefined,
+              seo:           mlhr.categories.seo               ? { score: (mlhr.categories.seo.score ?? 0) * 100,               title: 'SEO (Mobile)' }            : undefined,
+            }
+            const ma = mlhr.audits
+            mobileCoreWebVitals = {
+              lcp: ma['largest-contentful-paint']?.numericValue,
+              cls: ma['cumulative-layout-shift']?.numericValue,
+              fcp: ma['first-contentful-paint']?.numericValue,
+              tti: ma['interactive']?.numericValue,
+              tbt: ma['total-blocking-time']?.numericValue,
+              inp: ma['interaction-to-next-paint']?.numericValue,
+            }
+            mobileScore = Math.round((mlhr.categories.performance?.score ?? 0) * 100)
+          }
+        } catch { /* mobile run is non-fatal — desktop results still returned */ }
+      }
+
+      return { categories, mobileCategories, mobileCoreWebVitals, mobileScore, coreWebVitals, opportunities, diagnostics, score }
     } finally {
       await chrome.kill()
     }

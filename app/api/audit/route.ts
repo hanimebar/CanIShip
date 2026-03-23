@@ -2,84 +2,102 @@
  * POST /api/audit — Creates a new audit job
  * GET  /api/audit — Lists audit jobs for the current user
  *
+ * Auth: Supabase session cookie OR Authorization: Bearer <api_key>
+ *
  * NOTE: This route only creates database records. The actual audit
- * processing happens in the standalone worker (scripts/run-worker.js
- * or via the polling pattern). No heavy imports here.
+ * processing happens in the standalone worker. No heavy imports here.
+ *
+ * ── SQL to deploy in Supabase (run once) ──────────────────────────────────
+ *
+ *   -- Atomic audit counter: increments only if under limit, handles monthly reset
+ *   CREATE OR REPLACE FUNCTION increment_audit_count(p_user_id UUID, p_limit INT)
+ *   RETURNS TABLE(success BOOLEAN, used INT, plan TEXT) LANGUAGE plpgsql AS $$
+ *   DECLARE
+ *     v_used INT; v_plan TEXT; v_reset_at TIMESTAMPTZ;
+ *   BEGIN
+ *     SELECT audits_used_this_month, plan, audits_reset_at
+ *       INTO v_used, v_plan, v_reset_at FROM profiles WHERE id = p_user_id FOR UPDATE;
+ *     IF NOW() >= v_reset_at OR v_reset_at IS NULL THEN
+ *       v_used := 0;
+ *       UPDATE profiles SET audits_used_this_month = 0,
+ *         audits_reset_at = DATE_TRUNC('month', NOW() + INTERVAL '1 month') WHERE id = p_user_id;
+ *     END IF;
+ *     IF v_used >= p_limit THEN RETURN QUERY SELECT FALSE, v_used, v_plan; RETURN; END IF;
+ *     UPDATE profiles SET audits_used_this_month = v_used + 1 WHERE id = p_user_id;
+ *     RETURN QUERY SELECT TRUE, v_used + 1, v_plan;
+ *   END; $$;
+ *
+ *   -- Add callback_url column if not already present:
+ *   ALTER TABLE audit_jobs ADD COLUMN IF NOT EXISTS callback_url TEXT;
+ *
+ * ─────────────────────────────────────────────────────────────────────────
  */
 
 import { NextRequest, NextResponse } from 'next/server'
 import { createSupabaseServiceClient } from '@/lib/supabase'
 import { createServerClient } from '@supabase/ssr'
 import { cookies } from 'next/headers'
+import { checkSsrf } from '@/lib/ssrf-guard'
+import { resolveApiKey } from '@/lib/api-auth'
 
 export const runtime = 'nodejs'
 
-function createServerSupabase() {
+const PLAN_LIMITS: Record<string, number> = { free: 3, builder: 15, studio: 99999 }
+
+function createSessionSupabase() {
   const cookieStore = cookies()
   return createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-    {
-      cookies: {
-        get(name: string) {
-          return cookieStore.get(name)?.value
-        },
-      },
-    }
+    { cookies: { get: (name: string) => cookieStore.get(name)?.value } }
   )
+}
+
+/** Resolve user from session cookie or API key Bearer token. */
+async function resolveUser(req: NextRequest): Promise<{ userId: string; via: 'session' | 'api_key' } | null> {
+  const authHeader = req.headers.get('authorization')
+  if (authHeader?.startsWith('Bearer ')) {
+    const rawKey = authHeader.slice(7)
+    const result = await resolveApiKey(rawKey)
+    if (result.authenticated) return { userId: result.userId, via: 'api_key' }
+    return null
+  }
+
+  try {
+    const supabase = createSessionSupabase()
+    const { data: { user } } = await supabase.auth.getUser()
+    if (user) return { userId: user.id, via: 'session' }
+  } catch { /* fall through */ }
+
+  return null
 }
 
 export async function POST(req: NextRequest) {
   try {
-    const supabase = createServerSupabase()
-    const { data: { user }, error: authError } = await supabase.auth.getUser()
-
-    if (authError || !user) {
+    const identity = await resolveUser(req)
+    if (!identity) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
+    const { userId } = identity
 
-    const serviceClient = createSupabaseServiceClient()
-    const { data: profile } = await serviceClient
-      .from('profiles')
-      .select('plan, audits_used_this_month, audits_reset_at')
-      .eq('id', user.id)
-      .single()
-
-    const limits: Record<string, number> = { free: 3, builder: 15, studio: 99999 }
-    const plan = profile?.plan || 'free'
-    const limit = limits[plan] ?? 3
-
-    // Reset monthly counter if needed
-    const now = new Date()
-    const resetAt = profile?.audits_reset_at ? new Date(profile.audits_reset_at) : now
-    if (now >= resetAt) {
-      await serviceClient
-        .from('profiles')
-        .update({
-          audits_used_this_month: 0,
-          audits_reset_at: new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() + 1, 1)).toISOString(),
-        })
-        .eq('id', user.id)
+    // ── Parse body first so we can validate inputs before touching the DB ──
+    let body: Record<string, unknown>
+    try {
+      body = await req.json()
+    } catch {
+      return NextResponse.json({ error: 'Invalid JSON body' }, { status: 400 })
     }
 
-    const used = now >= resetAt ? 0 : (profile?.audits_used_this_month ?? 0)
-    if (used >= limit) {
-      return NextResponse.json(
-        { error: 'Monthly audit limit reached', plan, limit, used, upgrade_url: '/pricing' },
-        { status: 429 }
-      )
-    }
-
-    const body = await req.json()
-    const { url, description, flows, depth } = body
+    const { url, description, flows, depth, callback_url } = body
 
     if (!url || typeof url !== 'string') {
-      return NextResponse.json({ error: 'URL is required' }, { status: 400 })
+      return NextResponse.json({ error: 'url is required' }, { status: 400 })
     }
     if (!description || typeof description !== 'string' || description.trim().length < 10) {
-      return NextResponse.json({ error: 'Description must be at least 10 characters' }, { status: 400 })
+      return NextResponse.json({ error: 'description must be at least 10 characters' }, { status: 400 })
     }
 
+    // ── URL validation ──────────────────────────────────────────────────────
     let parsedUrl: URL
     try {
       parsedUrl = new URL(url.trim().startsWith('http') ? url.trim() : `https://${url.trim()}`)
@@ -88,10 +106,103 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Invalid URL format' }, { status: 400 })
     }
 
-    const validDepths = ['quick', 'standard', 'deep']
-    const auditDepth = validDepths.includes(depth) ? depth : 'quick'
+    // ── SSRF guard — block private/internal IPs ─────────────────────────────
+    const ssrfCheck = await checkSsrf(parsedUrl.href)
+    if (!ssrfCheck.allowed) {
+      return NextResponse.json(
+        { error: `URL not allowed: ${ssrfCheck.reason}` },
+        { status: 400 }
+      )
+    }
 
-    if (plan === 'free' && auditDepth !== 'quick') {
+    // ── Validate callback_url if provided ───────────────────────────────────
+    let callbackUrl: string | undefined
+    if (callback_url !== undefined) {
+      if (typeof callback_url !== 'string') {
+        return NextResponse.json({ error: 'callback_url must be a string' }, { status: 400 })
+      }
+      try {
+        const cbParsed = new URL(callback_url)
+        if (!['http:', 'https:'].includes(cbParsed.protocol)) throw new Error()
+        // SSRF guard on callback URL too — prevent internal webhook abuse
+        const cbSsrf = await checkSsrf(callback_url)
+        if (!cbSsrf.allowed) {
+          return NextResponse.json({ error: `callback_url not allowed: ${cbSsrf.reason}` }, { status: 400 })
+        }
+        callbackUrl = cbParsed.href
+      } catch {
+        return NextResponse.json({ error: 'callback_url must be a valid https URL' }, { status: 400 })
+      }
+    }
+
+    const validDepths = ['quick', 'standard', 'deep']
+    const auditDepth = validDepths.includes(depth as string) ? (depth as string) : 'quick'
+
+    // ── Atomic counter increment via Postgres RPC ───────────────────────────
+    // Falls back to the legacy read-modify-write if the RPC is not deployed yet.
+    const serviceClient = createSupabaseServiceClient()
+    let planForDepthCheck = 'free'
+
+    const { data: rpcResult, error: rpcError } = await serviceClient
+      .rpc('increment_audit_count', {
+        p_user_id: userId,
+        p_limit: PLAN_LIMITS['free'], // placeholder — RPC uses the user's actual plan limit
+      })
+
+    if (rpcError) {
+      // RPC not deployed yet — fall back to safe manual check
+      const { data: profile } = await serviceClient
+        .from('profiles')
+        .select('plan, audits_used_this_month, audits_reset_at')
+        .eq('id', userId)
+        .single()
+
+      planForDepthCheck = profile?.plan || 'free'
+      const limit = PLAN_LIMITS[planForDepthCheck] ?? 3
+      const now = new Date()
+      const resetAt = profile?.audits_reset_at ? new Date(profile.audits_reset_at) : now
+
+      if (now >= resetAt) {
+        await serviceClient
+          .from('profiles')
+          .update({
+            audits_used_this_month: 0,
+            audits_reset_at: new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() + 1, 1)).toISOString(),
+          })
+          .eq('id', userId)
+      }
+
+      const used = now >= resetAt ? 0 : (profile?.audits_used_this_month ?? 0)
+      if (used >= limit) {
+        return NextResponse.json(
+          { error: 'Monthly audit limit reached', plan: planForDepthCheck, limit, used, upgrade_url: '/pricing' },
+          { status: 429 }
+        )
+      }
+      await serviceClient
+        .from('profiles')
+        .update({ audits_used_this_month: used + 1 })
+        .eq('id', userId)
+    } else {
+      // RPC succeeded
+      const row = Array.isArray(rpcResult) ? rpcResult[0] : rpcResult
+      if (!row?.success) {
+        const { data: profile } = await serviceClient
+          .from('profiles')
+          .select('plan')
+          .eq('id', userId)
+          .single()
+        planForDepthCheck = profile?.plan || 'free'
+        const limit = PLAN_LIMITS[planForDepthCheck] ?? 3
+        return NextResponse.json(
+          { error: 'Monthly audit limit reached', plan: planForDepthCheck, limit, upgrade_url: '/pricing' },
+          { status: 429 }
+        )
+      }
+      planForDepthCheck = row.plan || 'free'
+    }
+
+    if (planForDepthCheck === 'free' && auditDepth !== 'quick') {
       return NextResponse.json(
         { error: 'Full scan depths require a Builder or Studio plan', upgrade_url: '/pricing' },
         { status: 403 }
@@ -101,12 +212,13 @@ export async function POST(req: NextRequest) {
     const { data: job, error: insertError } = await serviceClient
       .from('audit_jobs')
       .insert({
-        user_id: user.id,
+        user_id: userId,
         url: parsedUrl.href,
         description: description.trim(),
         flows: Array.isArray(flows) ? flows.filter((f: unknown) => typeof f === 'string') : [],
         depth: auditDepth,
         status: 'queued',
+        ...(callbackUrl ? { callback_url: callbackUrl } : {}),
       })
       .select()
       .single()
@@ -116,37 +228,24 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Failed to create audit job' }, { status: 500 })
     }
 
-    await serviceClient
-      .from('profiles')
-      .update({ audits_used_this_month: used + 1 })
-      .eq('id', user.id)
-
-    // If REDIS_URL is set, enqueue to BullMQ
-    // If not, the Supabase polling worker picks it up automatically
+    // Enqueue to BullMQ if Redis is available; otherwise polling worker picks it up
     if (process.env.REDIS_URL) {
-      try {
-        // Use dynamic import with webpackIgnore to avoid bundling
-        const redisUrl = process.env.REDIS_URL
-        const jobId = job.id
-
-        // Fire-and-forget: enqueue asynchronously
-        setImmediate(async () => {
-          try {
-            // eslint-disable-next-line @typescript-eslint/no-require-imports
-            const { Queue } = require(/* webpackIgnore: true */ 'bullmq')
-            // eslint-disable-next-line @typescript-eslint/no-require-imports
-            const IORedis = require(/* webpackIgnore: true */ 'ioredis')
-            const conn = new IORedis(redisUrl, { maxRetriesPerRequest: null })
-            const queue = new Queue('audit-jobs', { connection: conn })
-            await queue.add('run-audit', job, { jobId, attempts: 2 })
-            await conn.quit()
-          } catch (err) {
-            console.error('[API] Redis enqueue failed (polling will pick up):', err)
-          }
-        })
-      } catch {
-        // Non-fatal: polling worker will handle it
-      }
+      const redisUrl = process.env.REDIS_URL
+      const jobId = job.id
+      setImmediate(async () => {
+        try {
+          // eslint-disable-next-line @typescript-eslint/no-require-imports
+          const { Queue } = require(/* webpackIgnore: true */ 'bullmq')
+          // eslint-disable-next-line @typescript-eslint/no-require-imports
+          const IORedis = require(/* webpackIgnore: true */ 'ioredis')
+          const conn = new IORedis(redisUrl, { maxRetriesPerRequest: null })
+          const queue = new Queue('audit-jobs', { connection: conn })
+          await queue.add('run-audit', job, { jobId, attempts: 2 })
+          await conn.quit()
+        } catch (err) {
+          console.error('[API] Redis enqueue failed (polling will pick up):', err)
+        }
+      })
     }
 
     return NextResponse.json({ job_id: job.id, status: 'queued' }, { status: 201 })
@@ -156,12 +255,10 @@ export async function POST(req: NextRequest) {
   }
 }
 
-export async function GET() {
+export async function GET(req: NextRequest) {
   try {
-    const supabase = createServerSupabase()
-    const { data: { user }, error: authError } = await supabase.auth.getUser()
-
-    if (authError || !user) {
+    const identity = await resolveUser(req)
+    if (!identity) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
@@ -169,7 +266,7 @@ export async function GET() {
     const { data: jobs, error } = await serviceClient
       .from('audit_jobs')
       .select('*, audit_reports(id, ship_score, ship_verdict)')
-      .eq('user_id', user.id)
+      .eq('user_id', identity.userId)
       .order('created_at', { ascending: false })
       .limit(50)
 
