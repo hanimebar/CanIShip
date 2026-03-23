@@ -1,0 +1,221 @@
+name: CanIShip Audit
+description: Run a CanIShip quality audit against a URL and fail the build if the score is too low.
+
+branding:
+  icon: anchor
+  color: green
+
+inputs:
+  url:
+    description: The URL to audit (must be publicly accessible)
+    required: true
+
+  description:
+    description: What your app does — the more detail, the better the audit
+    required: true
+
+  license_key:
+    description: Your CanIShip Studio license key (from Settings → Docker License)
+    required: true
+
+  anthropic_api_key:
+    description: Your Anthropic API key (used for the AI audit analysis)
+    required: true
+
+  depth:
+    description: Audit depth — quick (5 min), standard (15 min), or deep (30 min)
+    required: false
+    default: quick
+
+  min_score:
+    description: Minimum ShipScore (0–100). Build fails if score is below this. Set to 0 to disable.
+    required: false
+    default: '0'
+
+  flows:
+    description: Comma-separated list of user flows to test (e.g. "sign up, checkout, password reset")
+    required: false
+    default: ''
+
+  output_dir:
+    description: Directory to write JSON + HTML report files
+    required: false
+    default: caniship-reports
+
+  report_format:
+    description: Output format — json, html, or both
+    required: false
+    default: both
+
+  docker_image:
+    description: Docker image to use (override for custom builds)
+    required: false
+    default: caniship/caniship:latest
+
+outputs:
+  ship_score:
+    description: The ShipScore (0–100)
+    value: ${{ steps.poll.outputs.ship_score }}
+
+  ship_verdict:
+    description: The verdict — yes, no, or conditional
+    value: ${{ steps.poll.outputs.ship_verdict }}
+
+  report_json:
+    description: Path to the JSON report file
+    value: ${{ inputs.output_dir }}/latest.json
+
+runs:
+  using: composite
+  steps:
+
+    - name: Create report output directory
+      shell: bash
+      run: mkdir -p "${{ inputs.output_dir }}"
+
+    - name: Start CanIShip container
+      shell: bash
+      run: |
+        docker run -d \
+          --name caniship-audit-${{ github.run_id }} \
+          -p 3000:3000 \
+          -e LICENSE_KEY="${{ inputs.license_key }}" \
+          -e ANTHROPIC_API_KEY="${{ inputs.anthropic_api_key }}" \
+          -e DOCKER_MODE=true \
+          -e MIN_SCORE="${{ inputs.min_score }}" \
+          -e OUTPUT_DIR=/reports \
+          -e REPORT_FORMAT="${{ inputs.report_format }}" \
+          -v "${{ github.workspace }}/${{ inputs.output_dir }}:/reports" \
+          "${{ inputs.docker_image }}"
+
+    - name: Wait for container to be ready
+      shell: bash
+      run: |
+        echo "Waiting for CanIShip to start..."
+        for i in $(seq 1 40); do
+          if curl -sf http://localhost:3000/api/docker-health > /dev/null 2>&1; then
+            echo "CanIShip is ready."
+            break
+          fi
+          if [ "$i" -eq 40 ]; then
+            echo "ERROR: CanIShip did not start within 120s."
+            docker logs caniship-audit-${{ github.run_id }}
+            exit 1
+          fi
+          sleep 3
+        done
+
+    - name: Submit audit job
+      id: submit
+      shell: bash
+      run: |
+        FLOWS_JSON="[]"
+        if [ -n "${{ inputs.flows }}" ]; then
+          FLOWS_JSON=$(echo "${{ inputs.flows }}" | python3 -c "
+        import sys, json
+        flows = [f.strip() for f in sys.stdin.read().split(',') if f.strip()]
+        print(json.dumps(flows))
+        " 2>/dev/null || echo "[]")
+        fi
+
+        RESPONSE=$(curl -sf -X POST http://localhost:3000/api/audit \
+          -H "Content-Type: application/json" \
+          -d "{
+            \"url\": \"${{ inputs.url }}\",
+            \"description\": \"${{ inputs.description }}\",
+            \"depth\": \"${{ inputs.depth }}\",
+            \"flows\": $FLOWS_JSON
+          }")
+
+        echo "Response: $RESPONSE"
+        JOB_ID=$(echo "$RESPONSE" | python3 -c "import sys,json; print(json.load(sys.stdin)['job_id'])" 2>/dev/null)
+
+        if [ -z "$JOB_ID" ]; then
+          echo "ERROR: Failed to create audit job. Response: $RESPONSE"
+          exit 1
+        fi
+
+        echo "job_id=$JOB_ID" >> $GITHUB_OUTPUT
+        echo "Audit job created: $JOB_ID"
+
+    - name: Poll for audit completion
+      id: poll
+      shell: bash
+      run: |
+        JOB_ID="${{ steps.submit.outputs.job_id }}"
+        DEPTH="${{ inputs.depth }}"
+
+        # Max wait: quick=6min, standard=18min, deep=35min
+        case "$DEPTH" in
+          standard) MAX_ATTEMPTS=360 ;;
+          deep)     MAX_ATTEMPTS=700 ;;
+          *)        MAX_ATTEMPTS=120 ;;
+        esac
+
+        echo "Polling for job $JOB_ID (depth: $DEPTH, max wait: ${MAX_ATTEMPTS}x3s)..."
+
+        for i in $(seq 1 $MAX_ATTEMPTS); do
+          STATUS_RESPONSE=$(curl -sf "http://localhost:3000/api/audit/$JOB_ID" || echo '{"status":"error"}')
+          STATUS=$(echo "$STATUS_RESPONSE" | python3 -c "import sys,json; print(json.load(sys.stdin).get('status','unknown'))" 2>/dev/null || echo "unknown")
+
+          if [ "$STATUS" = "complete" ]; then
+            SCORE=$(echo "$STATUS_RESPONSE" | python3 -c "import sys,json; print(json.load(sys.stdin).get('ship_score','0'))" 2>/dev/null || echo "0")
+            VERDICT=$(echo "$STATUS_RESPONSE" | python3 -c "import sys,json; print(json.load(sys.stdin).get('ship_verdict','unknown'))" 2>/dev/null || echo "unknown")
+            echo "ship_score=$SCORE" >> $GITHUB_OUTPUT
+            echo "ship_verdict=$VERDICT" >> $GITHUB_OUTPUT
+            echo ""
+            echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+            echo "  CanIShip Audit Complete"
+            echo "  Score:   $SCORE / 100"
+            echo "  Verdict: $VERDICT"
+            echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+            break
+          elif [ "$STATUS" = "failed" ]; then
+            ERROR=$(echo "$STATUS_RESPONSE" | python3 -c "import sys,json; print(json.load(sys.stdin).get('error_message','unknown error'))" 2>/dev/null || echo "unknown error")
+            echo "ERROR: Audit job failed — $ERROR"
+            docker logs caniship-audit-${{ github.run_id }} --tail 50
+            exit 1
+          fi
+
+          if [ $((i % 10)) -eq 0 ]; then
+            echo "Still running... (${i}x3s elapsed, status: $STATUS)"
+          fi
+          sleep 3
+        done
+
+        if [ -z "$(grep 'ship_score' $GITHUB_OUTPUT 2>/dev/null)" ]; then
+          echo "ERROR: Audit timed out after waiting too long."
+          exit 1
+        fi
+
+    - name: Check minimum score
+      shell: bash
+      run: |
+        MIN_SCORE="${{ inputs.min_score }}"
+        SCORE="${{ steps.poll.outputs.ship_score }}"
+
+        if [ "$MIN_SCORE" -gt 0 ] && [ "$SCORE" -lt "$MIN_SCORE" ]; then
+          echo ""
+          echo "FAIL: ShipScore $SCORE is below the required minimum of $MIN_SCORE."
+          echo "Fix the issues in your CanIShip report and try again."
+          exit 1
+        fi
+
+        if [ "$MIN_SCORE" -gt 0 ]; then
+          echo "Score $SCORE meets minimum threshold of $MIN_SCORE."
+        fi
+
+    - name: Upload audit report
+      uses: actions/upload-artifact@v4
+      if: always()
+      with:
+        name: caniship-report
+        path: ${{ inputs.output_dir }}/
+        if-no-files-found: warn
+
+    - name: Stop and remove container
+      shell: bash
+      if: always()
+      run: |
+        docker stop caniship-audit-${{ github.run_id }} 2>/dev/null || true
+        docker rm   caniship-audit-${{ github.run_id }} 2>/dev/null || true

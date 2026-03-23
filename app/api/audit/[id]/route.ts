@@ -7,6 +7,8 @@ import { createSupabaseServiceClient } from '@/lib/supabase'
 import { createServerClient } from '@supabase/ssr'
 import { cookies } from 'next/headers'
 
+const DOCKER_MODE = process.env.DOCKER_MODE === 'true'
+
 export const runtime = 'nodejs'
 
 function createServerSupabase() {
@@ -29,6 +31,36 @@ export async function GET(
   { params }: { params: { id: string } }
 ) {
   try {
+    // ── Docker mode: no auth required, use local DB ──────────────────────────
+    if (DOCKER_MODE) {
+      const { dockerDb } = await import('@/lib/docker-db')
+      const { id } = params
+      if (!id) return NextResponse.json({ error: 'Job ID required' }, { status: 400 })
+
+      const job = dockerDb.getJob(id)
+      if (!job) return NextResponse.json({ error: 'Job not found' }, { status: 404 })
+
+      if (job.status === 'complete') {
+        const report = dockerDb.getReport(id)
+        return NextResponse.json({
+          status: job.status,
+          job_id: job.id,
+          report_id: report?.id,
+          ship_score: report?.ship_score,
+          ship_verdict: report?.ship_verdict,
+          completed_at: job.completed_at,
+        })
+      }
+
+      return NextResponse.json({
+        status: job.status,
+        job_id: job.id,
+        error_message: job.error_message,
+        started_at: job.started_at,
+        created_at: job.created_at,
+      })
+    }
+
     const supabase = createServerSupabase()
     const { data: { user }, error: authError } = await supabase.auth.getUser()
 

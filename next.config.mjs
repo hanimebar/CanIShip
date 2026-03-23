@@ -16,6 +16,7 @@ const RUNTIME_ONLY_PACKAGES = [
   '@axe-core/playwright',
   'bullmq',
   'ioredis',
+  'better-sqlite3',
 ]
 
 /** @type {import('next').NextConfig} */

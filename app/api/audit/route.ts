@@ -40,6 +40,8 @@ import { cookies } from 'next/headers'
 import { checkSsrf } from '@/lib/ssrf-guard'
 import { resolveApiKey } from '@/lib/api-auth'
 
+const DOCKER_MODE = process.env.DOCKER_MODE === 'true'
+
 export const runtime = 'nodejs'
 
 const PLAN_LIMITS: Record<string, number> = { free: 3, builder: 15, studio: 99999 }
@@ -74,6 +76,11 @@ async function resolveUser(req: NextRequest): Promise<{ userId: string; via: 'se
 
 export async function POST(req: NextRequest) {
   try {
+    // ── Docker mode: bypass Supabase auth, use local DB ─────────────────────
+    if (DOCKER_MODE) {
+      return handleDockerPost(req)
+    }
+
     const identity = await resolveUser(req)
     if (!identity) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
@@ -257,6 +264,12 @@ export async function POST(req: NextRequest) {
 
 export async function GET(req: NextRequest) {
   try {
+    if (DOCKER_MODE) {
+      const { dockerDb } = await import('@/lib/docker-db')
+      const jobs = dockerDb.listJobs()
+      return NextResponse.json({ jobs })
+    }
+
     const identity = await resolveUser(req)
     if (!identity) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
@@ -279,4 +292,69 @@ export async function GET(req: NextRequest) {
     console.error('[API] Audit GET error:', err)
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }
+}
+
+// ── Docker mode POST handler ───────────────────────────────────────────────
+
+async function handleDockerPost(req: NextRequest) {
+  const { dockerDb } = await import('@/lib/docker-db')
+
+  let body: Record<string, unknown>
+  try {
+    body = await req.json()
+  } catch {
+    return NextResponse.json({ error: 'Invalid JSON body' }, { status: 400 })
+  }
+
+  const { url, description, flows, depth, callback_url } = body
+
+  if (!url || typeof url !== 'string') {
+    return NextResponse.json({ error: 'url is required' }, { status: 400 })
+  }
+  if (!description || typeof description !== 'string' || description.trim().length < 10) {
+    return NextResponse.json({ error: 'description must be at least 10 characters' }, { status: 400 })
+  }
+
+  let parsedUrl: URL
+  try {
+    parsedUrl = new URL(url.trim().startsWith('http') ? url.trim() : `https://${url.trim()}`)
+    if (!['http:', 'https:'].includes(parsedUrl.protocol)) throw new Error()
+  } catch {
+    return NextResponse.json({ error: 'Invalid URL format' }, { status: 400 })
+  }
+
+  // SSRF guard still applies in Docker mode — prevent auditing localhost/internal IPs
+  // unless ALLOW_PRIVATE_IPS=true (opt-in for auditing staging on local network)
+  if (process.env.ALLOW_PRIVATE_IPS !== 'true') {
+    const ssrfCheck = await checkSsrf(parsedUrl.href)
+    if (!ssrfCheck.allowed) {
+      return NextResponse.json(
+        { error: `URL not allowed: ${ssrfCheck.reason}. Set ALLOW_PRIVATE_IPS=true to audit local/staging URLs.` },
+        { status: 400 }
+      )
+    }
+  }
+
+  let callbackUrl: string | undefined
+  if (callback_url && typeof callback_url === 'string') {
+    try {
+      callbackUrl = new URL(callback_url).href
+    } catch {
+      return NextResponse.json({ error: 'callback_url must be a valid URL' }, { status: 400 })
+    }
+  }
+
+  const validDepths = ['quick', 'standard', 'deep']
+  const auditDepth = validDepths.includes(depth as string) ? (depth as string) : 'quick'
+
+  const job = dockerDb.createJob({
+    user_id: 'docker-local',
+    url: parsedUrl.href,
+    description: (description as string).trim(),
+    flows: Array.isArray(flows) ? (flows as unknown[]).filter((f): f is string => typeof f === 'string') : [],
+    depth: auditDepth as 'quick' | 'standard' | 'deep',
+    callback_url: callbackUrl,
+  })
+
+  return NextResponse.json({ job_id: job.id, status: 'queued' }, { status: 201 })
 }

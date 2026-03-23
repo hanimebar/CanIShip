@@ -1,0 +1,34 @@
+# Never include these in the Docker image
+.git
+.gitignore
+.env
+.env.local
+.env.*.local
+
+# Next.js build artifacts (rebuilt inside Docker)
+.next
+out
+
+# Development files
+node_modules
+npm-debug.log*
+*.log
+
+# Source maps — never ship these
+**/*.map
+
+# Docs and dev files
+README.md
+GUIDE.md
+USER-GUIDE.md
+DOCKER.md
+marketing/
+*.md
+
+# macOS
+.DS_Store
+
+# Tests
+**/*.test.ts
+**/*.spec.ts
+__tests__/
