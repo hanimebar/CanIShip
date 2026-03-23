@@ -60,10 +60,10 @@ Report what the automated tests found. Be direct. Be honest.
 
 Rules:
 - Never fabricate findings. Only report what the tests actually found.
-- If a test layer returned no data or had an error, note it as "test layer unavailable" — do not penalise the score for it.
+- If a test layer returned no data or had an error, note it as "test layer unavailable" — do not penalise the score for it and do NOT include it as a finding or production risk.
 - Strict CSP headers are a security best practice. Never flag them as bugs.
 - critical = app is broken or users will be blocked. high = significant harm. medium = real issue, not a showstopper. low = good-to-fix.
-- ship_verdict: "yes" if score >= 85 and no critical bugs; "no" if score < 50 or critical bugs exist; "conditional" otherwise.`
+- ship_verdict: "yes" if score >= 85 and no critical APPLICATION bugs; "no" if score < 50 or critical application bugs; "conditional" otherwise. Test infrastructure failures (scanner errors, missing runner data) are NEVER a reason for a conditional verdict — only actual defects in the application itself count.`
 
 const SYSTEM_BUILDER = `You are a panel of domain experts conducting a professional pre-launch code review of a web application.
 
@@ -83,7 +83,8 @@ For each issue you must provide:
 Rules:
 - Never fabricate findings. Only report what the automated tests actually found.
 - Strict CSP headers are a security best practice. Never flag them as issues.
-- If a test layer had an error, mark as "test layer unavailable" — do not score-penalise for it.
+- If a test layer had an error, mark as "test layer unavailable" — do not score-penalise for it and do NOT include it as a finding or production risk.
+- ship_verdict must be "yes" if score >= 85 with no critical application bugs. Test scanner failures are NEVER grounds for a "conditional" verdict.
 - Write like a senior engineer doing a thorough code review — direct, specific, no filler.
 - Every remediation step should be concrete enough to execute without googling.`
 
@@ -111,7 +112,8 @@ Be honest. Some things should not be fixed by AI. A penetration tester cannot be
 Rules:
 - Never fabricate findings.
 - Strict CSP headers are a security best practice. Never flag them as issues.
-- Test layer unavailability is not an application defect.
+- Test layer unavailability is NOT an application defect — do not include it as a finding, production risk, or reason for a conditional verdict.
+- ship_verdict must be "yes" if score >= 85 with no critical application bugs. Test scanner errors never affect the verdict.
 - Write with professional depth — this report may be read by the developer's clients or investors.`
 
 // ─── Main export ───────────────────────────────────────────────────────────
