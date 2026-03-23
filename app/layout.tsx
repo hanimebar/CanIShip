@@ -6,6 +6,10 @@ export const metadata: Metadata = {
   description:
     'Bulletproof QA in minutes. Functional tests, accessibility, performance, security — all in one audit. Get your ShipScore and ship with confidence.',
   keywords: ['QA', 'quality assurance', 'app testing', 'accessibility', 'performance', 'solo builders'],
+  metadataBase: new URL('https://caniship.actvli.com'),
+  alternates: {
+    canonical: 'https://caniship.actvli.com',
+  },
   icons: {
     icon: [
       { url: '/favicon-16.png', sizes: '16x16', type: 'image/png' },

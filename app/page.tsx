@@ -48,10 +48,10 @@ export default async function LandingPage() {
             <span className="text-dock-400 text-xs tracking-widest uppercase" style={{ fontFamily: "'Barlow Condensed', sans-serif" }}>
               PORT AUTHORITY · CARGO INSPECTION DIVISION
             </span>
-            <span className="text-dock-400 text-xs tracking-widest" style={{ fontFamily: "'Barlow Condensed', sans-serif" }}>
+            <span className="hidden md:block text-dock-400 text-xs tracking-widest" style={{ fontFamily: "'Barlow Condensed', sans-serif" }}>
               {today}
             </span>
-            <span className="text-dock-400 text-xs tracking-widest uppercase" style={{ fontFamily: "'Barlow Condensed', sans-serif" }}>
+            <span className="hidden md:block text-dock-400 text-xs tracking-widest uppercase" style={{ fontFamily: "'Barlow Condensed', sans-serif" }}>
               Est. 2026 · Vol. I
             </span>
           </div>
@@ -79,22 +79,22 @@ export default async function LandingPage() {
 
           {/* Nav strip */}
           <div className="flex items-center justify-between pb-3">
-            <nav className="flex items-center gap-6 text-xs uppercase tracking-widest text-dock-400" style={{ fontFamily: "'Barlow Condensed', sans-serif" }}>
-              <Link href="/pricing" className="hover:text-dock-100 transition-colors">Pricing</Link>
+            <nav className="hidden md:flex items-center gap-6 text-xs uppercase tracking-widest text-dock-400" style={{ fontFamily: "'Barlow Condensed', sans-serif" }}>
+              <Link href="/pricing" className="py-3 hover:text-dock-100 transition-colors min-h-[44px] flex items-center">Pricing</Link>
               <span className="text-dock-700">·</span>
-              <Link href="#how-it-works" className="hover:text-dock-100 transition-colors">How It Works</Link>
+              <Link href="#how-it-works" className="py-3 hover:text-dock-100 transition-colors min-h-[44px] flex items-center">How It Works</Link>
               <span className="text-dock-700">·</span>
-              <Link href="#standards" className="hover:text-dock-100 transition-colors">Standards</Link>
+              <Link href="#standards" className="py-3 hover:text-dock-100 transition-colors min-h-[44px] flex items-center">Standards</Link>
             </nav>
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-3 ml-auto">
               {user ? (
                 <>
-                  <Link href="/dashboard" className="text-xs uppercase tracking-widest text-dock-400 hover:text-dock-100 transition-colors" style={{ fontFamily: "'Barlow Condensed', sans-serif" }}>
+                  <Link href="/dashboard" className="hidden md:flex min-h-[44px] items-center text-xs uppercase tracking-widest text-dock-400 hover:text-dock-100 transition-colors px-2" style={{ fontFamily: "'Barlow Condensed', sans-serif" }}>
                     Dashboard
                   </Link>
                   <Link
                     href="/audit/new"
-                    className="px-4 py-2 bg-amber text-dock-900 text-xs font-bold uppercase tracking-widest hover:bg-amber-dim transition-colors"
+                    className="min-h-[44px] flex items-center px-4 bg-amber text-dock-900 text-xs font-bold uppercase tracking-widest hover:bg-amber-dim transition-colors"
                     style={{ fontFamily: "'Barlow Condensed', sans-serif" }}
                   >
                     File New Manifest →
@@ -102,12 +102,12 @@ export default async function LandingPage() {
                 </>
               ) : (
                 <>
-                  <Link href="/login" className="text-xs uppercase tracking-widest text-dock-400 hover:text-dock-100 transition-colors" style={{ fontFamily: "'Barlow Condensed', sans-serif" }}>
+                  <Link href="/login" className="hidden md:flex min-h-[44px] items-center text-xs uppercase tracking-widest text-dock-400 hover:text-dock-100 transition-colors px-2" style={{ fontFamily: "'Barlow Condensed', sans-serif" }}>
                     Sign In
                   </Link>
                   <Link
                     href="/signup"
-                    className="px-4 py-2 bg-amber text-dock-900 text-xs font-bold uppercase tracking-widest hover:bg-amber-dim transition-colors"
+                    className="min-h-[44px] flex items-center px-4 bg-amber text-dock-900 text-xs font-bold uppercase tracking-widest hover:bg-amber-dim transition-colors"
                     style={{ fontFamily: "'Barlow Condensed', sans-serif" }}
                   >
                     Request Clearance →
@@ -283,24 +283,26 @@ export default async function LandingPage() {
               How CanIShip Differs From Other Tools
             </h3>
           </div>
-          <div className="border border-dock-600 overflow-hidden">
-            <div className="grid grid-cols-3 bg-dock-800 border-b-2 border-dock-100 text-xs uppercase tracking-widest text-dock-300 px-4 py-2" style={{ fontFamily: "'Barlow Condensed', sans-serif" }}>
-              <span>Criterion</span>
-              <span className="text-amber">CanIShip</span>
-              <span>Other QA Tools</span>
-            </div>
-            {differentiatorsRows.map(({ field, caniship, others }, i) => (
-              <div
-                key={field}
-                className={`grid grid-cols-3 px-4 py-3 text-sm ${i % 2 === 0 ? 'bg-dock-900' : 'bg-dock-800'} ${i < differentiatorsRows.length - 1 ? 'border-b border-dock-600' : ''}`}
-              >
-                <span className="text-dock-400 text-xs uppercase tracking-wide" style={{ fontFamily: "'Barlow Condensed', sans-serif" }}>
-                  {field}
-                </span>
-                <span className="text-dock-100">{caniship}</span>
-                <span className="text-dock-500">{others}</span>
+          <div className="border border-dock-600 overflow-x-auto">
+            <div className="min-w-[480px]">
+              <div className="grid grid-cols-3 bg-dock-800 border-b-2 border-dock-100 text-xs uppercase tracking-widest text-dock-300 px-4 py-2" style={{ fontFamily: "'Barlow Condensed', sans-serif" }}>
+                <span>Criterion</span>
+                <span className="text-amber">CanIShip</span>
+                <span>Other QA Tools</span>
               </div>
-            ))}
+              {differentiatorsRows.map(({ field, caniship, others }, i) => (
+                <div
+                  key={field}
+                  className={`grid grid-cols-3 px-4 py-3 text-sm ${i % 2 === 0 ? 'bg-dock-900' : 'bg-dock-800'} ${i < differentiatorsRows.length - 1 ? 'border-b border-dock-600' : ''}`}
+                >
+                  <span className="text-dock-400 text-xs uppercase tracking-wide" style={{ fontFamily: "'Barlow Condensed', sans-serif" }}>
+                    {field}
+                  </span>
+                  <span className="text-dock-100">{caniship}</span>
+                  <span className="text-dock-500">{others}</span>
+                </div>
+              ))}
+            </div>
           </div>
         </div>
       </section>
@@ -559,7 +561,7 @@ export default async function LandingPage() {
               <div className="text-xs uppercase tracking-widest text-dock-500 border-b border-dock-600 pb-2 mb-3" style={{ fontFamily: "'Barlow Condensed', sans-serif" }}>
                 Product
               </div>
-              <ul className="space-y-2 text-xs text-dock-400" style={{ fontFamily: "'Barlow Condensed', sans-serif" }}>
+              <ul className="space-y-0 text-xs text-dock-400" style={{ fontFamily: "'Barlow Condensed', sans-serif" }}>
                 {[
                   ['Pricing', '/pricing'],
                   ['Run an Inspection', '/audit/new'],
@@ -568,7 +570,7 @@ export default async function LandingPage() {
                   ['Create Account', '/signup'],
                 ].map(([label, href]) => (
                   <li key={href}>
-                    <Link href={href} className="hover:text-dock-200 uppercase tracking-widest transition-colors">
+                    <Link href={href} className="min-h-[44px] flex items-center hover:text-dock-200 uppercase tracking-widest transition-colors">
                       {label}
                     </Link>
                   </li>
@@ -591,9 +593,9 @@ export default async function LandingPage() {
               <div className="text-xs uppercase tracking-widest text-dock-500 border-b border-dock-600 pb-2 mb-3" style={{ fontFamily: "'Barlow Condensed', sans-serif" }}>
                 Legal
               </div>
-              <ul className="space-y-2 text-xs text-dock-400" style={{ fontFamily: "'Barlow Condensed', sans-serif" }}>
-                <li><Link href="/privacy" className="hover:text-dock-200 uppercase tracking-widest transition-colors">Privacy Policy</Link></li>
-                <li><Link href="/terms" className="hover:text-dock-200 uppercase tracking-widest transition-colors">Terms of Service</Link></li>
+              <ul className="space-y-0 text-xs text-dock-400" style={{ fontFamily: "'Barlow Condensed', sans-serif" }}>
+                <li><Link href="/privacy" className="min-h-[44px] flex items-center hover:text-dock-200 uppercase tracking-widest transition-colors">Privacy Policy</Link></li>
+                <li><Link href="/terms" className="min-h-[44px] flex items-center hover:text-dock-200 uppercase tracking-widest transition-colors">Terms of Service</Link></li>
               </ul>
               <div className="mt-4 border border-dock-600 p-3 bg-dock-800">
                 <p className="text-xs text-dock-600 leading-relaxed">

@@ -91,11 +91,12 @@ export async function runLighthouseAudit(options: LighthouseOptions): Promise<Li
 
     const chrome = await launch({
       chromeFlags: [
-        '--headless=new',
+        '--headless',              // Use --headless (not --headless=new) for Railway/Docker compatibility
         '--no-sandbox',
         '--disable-setuid-sandbox',
         '--disable-dev-shm-usage',
         '--disable-gpu',
+        '--no-zygote',             // Avoids zygote process issues in Docker
         '--disable-extensions',
         '--disable-component-extensions-with-background-pages',
         // NOTE: --single-process is intentionally NOT included here.
