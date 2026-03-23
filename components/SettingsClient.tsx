@@ -68,6 +68,7 @@ export function SettingsClient({ currentName, email, plan, isOAuthUser, hasStrip
   const [licenseLoading, setLicenseLoading] = useState(false)
   const [licenseError, setLicenseError] = useState('')
   const [copied, setCopied] = useState(false)
+  const [copiedCmd, setCopiedCmd] = useState(false)
 
   async function handleNameUpdate(e: React.FormEvent) {
     e.preventDefault()
@@ -168,6 +169,14 @@ export function SettingsClient({ currentName, email, plan, isOAuthUser, hasStrip
     setTimeout(() => setCopied(false), 2000)
   }
 
+  async function copyDockerCmd() {
+    if (!licenseKey) return
+    const cmd = `docker run -p 3000:3000 \\\n  -e LICENSE_KEY=${licenseKey} \\\n  -e ANTHROPIC_API_KEY=your-key-here \\\n  -v caniship-data:/data \\\n  caniship/caniship:latest`
+    await navigator.clipboard.writeText(cmd)
+    setCopiedCmd(true)
+    setTimeout(() => setCopiedCmd(false), 2000)
+  }
+
   return (
     <div className="space-y-8">
 
@@ -265,34 +274,84 @@ export function SettingsClient({ currentName, email, plan, isOAuthUser, hasStrip
         </div>
       </section>
 
-      {/* Docker License — Studio only */}
+      {/* Docker — Studio only */}
       {plan === 'studio' && (
         <section className="rounded-2xl border border-neon-green/20 bg-neon-green/5 overflow-hidden">
-          <div className="px-6 py-4 border-b border-neon-green/10">
-            <h2 className="font-semibold text-white">Docker License Key</h2>
+          <div className="px-6 py-4 border-b border-neon-green/10 flex items-center justify-between">
+            <div>
+              <h2 className="font-semibold text-white">Docker Self-Hosted</h2>
+              <p className="text-xs text-gray-500 mt-0.5">Run CanIShip on your own machine — no data leaves your infrastructure</p>
+            </div>
+            <span className="text-xs font-mono bg-neon-green/10 text-neon-green border border-neon-green/20 px-2 py-1 rounded">Studio</span>
           </div>
-          <div className="px-6 py-5">
+          <div className="px-6 py-5 space-y-5">
             {licenseKey ? (
               <>
-                <p className="text-xs text-gray-400 mb-3">
-                  Use this key as <code className="text-neon-green bg-dark-700 px-1.5 py-0.5 rounded font-mono">DOCKER_LICENSE_KEY</code> when running the self-hosted Docker image.
-                </p>
-                <div className="flex items-center gap-3">
-                  <code className="flex-1 text-sm font-mono text-neon-green bg-dark-800 border border-dark-500 px-4 py-2.5 rounded-lg truncate">
-                    {licenseKey}
-                  </code>
-                  <button
-                    onClick={copyLicense}
-                    className="flex-shrink-0 px-3 py-2.5 border border-dark-400 text-xs text-gray-400 rounded-lg hover:border-neon-green hover:text-neon-green transition-colors font-mono"
-                  >
-                    {copied ? 'Copied!' : 'Copy'}
-                  </button>
+                {/* Step 1 */}
+                <div>
+                  <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">Step 1 — Pull the image</p>
+                  <div className="flex items-center gap-2 bg-dark-900 border border-dark-500 rounded-lg px-4 py-2.5">
+                    <code className="flex-1 text-sm font-mono text-neon-green">docker pull caniship/caniship:latest</code>
+                  </div>
+                </div>
+
+                {/* Step 2 */}
+                <div>
+                  <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">Step 2 — Your license key</p>
+                  <div className="flex items-center gap-3">
+                    <code className="flex-1 text-sm font-mono text-neon-green bg-dark-900 border border-dark-500 px-4 py-2.5 rounded-lg truncate">
+                      {licenseKey}
+                    </code>
+                    <button
+                      onClick={copyLicense}
+                      className="flex-shrink-0 px-3 py-2.5 border border-dark-400 text-xs text-gray-400 rounded-lg hover:border-neon-green hover:text-neon-green transition-colors font-mono"
+                    >
+                      {copied ? 'Copied!' : 'Copy'}
+                    </button>
+                  </div>
+                </div>
+
+                {/* Step 3 */}
+                <div>
+                  <div className="flex items-center justify-between mb-2">
+                    <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Step 3 — Run it</p>
+                    <button
+                      onClick={copyDockerCmd}
+                      className="text-xs text-gray-500 hover:text-neon-green transition-colors font-mono"
+                    >
+                      {copiedCmd ? '✓ Copied' : 'Copy command'}
+                    </button>
+                  </div>
+                  <pre className="bg-dark-900 border border-dark-500 rounded-lg px-4 py-3 text-sm font-mono text-gray-300 overflow-x-auto leading-relaxed">
+{`docker run -p 3000:3000 \\
+  -e LICENSE_KEY=`}<span className="text-neon-green">{licenseKey}</span>{` \\
+  -e ANTHROPIC_API_KEY=`}<span className="text-amber-400">your-anthropic-key</span>{` \\
+  -v caniship-data:/data \\
+  caniship/caniship:latest`}
+                  </pre>
+                  <p className="text-xs text-gray-600 mt-2">
+                    Then open <span className="text-gray-400 font-mono">http://localhost:3000</span> — same interface, fully local.
+                  </p>
+                </div>
+
+                {/* CI/CD note */}
+                <div className="rounded-xl border border-dark-500 bg-dark-800 px-4 py-3 flex items-start gap-3">
+                  <span className="text-lg mt-0.5">⚙️</span>
+                  <div>
+                    <p className="text-xs font-semibold text-white mb-0.5">Using in CI/CD?</p>
+                    <p className="text-xs text-gray-500">
+                      Add <code className="text-gray-300 font-mono">uses: actvli/caniship-action@v1</code> to any GitHub Actions workflow.
+                      Set <code className="text-gray-300 font-mono">min_score: 75</code> to fail builds automatically.
+                      Full guide in the <a href="https://github.com/hanimebar/CanIShip/blob/main/DOCKER.md" target="_blank" rel="noopener noreferrer" className="text-neon-green hover:underline">DOCKER.md</a>.
+                    </p>
+                  </div>
                 </div>
               </>
             ) : (
               <>
                 <p className="text-xs text-gray-400 mb-4">
-                  Generate a license key to use CanIShip as a self-hosted Docker image.
+                  Generate a license key to activate your self-hosted Docker image.
+                  Your key authorises the container to run audits — keep it private.
                 </p>
                 {licenseError && (
                   <p className="text-sm text-red-400 mb-3">{licenseError}</p>
