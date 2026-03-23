@@ -180,7 +180,7 @@ docker run -d \
   -e DOCKER_LICENSE_KEY=cis_... \
   -v $(pwd)/caniship-data:/app/data \
   --name caniship \
-  caniship/caniship
+  hanimebar/caniship
 ```
 
 Open http://localhost:3000 — no signup required in Docker mode.

@@ -37,7 +37,7 @@ You need a **Studio plan** to use the Docker image. Get one at [caniship.actvli.
 ### 2. Pull the image
 
 ```bash
-docker pull caniship/caniship:latest
+docker pull hanimebar/caniship:latest
 ```
 
 ### 3. Run it
@@ -47,7 +47,7 @@ docker run -p 3000:3000 \
   -e LICENSE_KEY=your-license-key-here \
   -e ANTHROPIC_API_KEY=sk-ant-... \
   -v caniship-data:/data \
-  caniship/caniship
+  hanimebar/caniship
 ```
 
 ### 4. Open the UI
@@ -113,7 +113,7 @@ docker run -p 3000:3000 \
   -e ALLOW_PRIVATE_IPS=true \
   --network host \
   -v caniship-data:/data \
-  caniship/caniship
+  hanimebar/caniship
 ```
 
 `--network host` lets the container reach your host machine's ports. Then audit `http://localhost:your-port` or `http://192.168.x.x`.
@@ -126,10 +126,10 @@ Without a volume, your audit history is lost when the container stops. Mount a n
 
 ```bash
 # Named volume (Docker manages storage)
-docker run ... -v caniship-data:/data caniship/caniship
+docker run ... -v caniship-data:/data hanimebar/caniship
 
 # Bind mount (you choose the path)
-docker run ... -v /home/you/caniship-data:/data caniship/caniship
+docker run ... -v /home/you/caniship-data:/data hanimebar/caniship
 ```
 
 ---
@@ -146,7 +146,7 @@ docker run -p 3000:3000 \
   -e REPORT_FORMAT=both \
   -v /home/you/audit-reports:/reports \
   -v caniship-data:/data \
-  caniship/caniship
+  hanimebar/caniship
 ```
 
 Reports are written to `/home/you/audit-reports/` on your machine, named:
@@ -255,7 +255,7 @@ jobs:
 
 ### What the action does
 
-1. Pulls `caniship/caniship:latest`
+1. Pulls `hanimebar/caniship:latest`
 2. Starts the container with your credentials
 3. Waits up to 120s for the health check to pass
 4. Submits the audit job
@@ -298,7 +298,7 @@ version: '3.8'
 
 services:
   caniship:
-    image: caniship/caniship:latest
+    image: hanimebar/caniship:latest
     ports:
       - "3000:3000"
     environment:
@@ -381,10 +381,10 @@ docker exec <container> find /data -name "*.json" -mtime +30 -delete
 ## Updating
 
 ```bash
-docker pull caniship/caniship:latest
+docker pull hanimebar/caniship:latest
 docker stop <your-container>
 docker rm   <your-container>
-docker run  ... caniship/caniship:latest  # same command as before
+docker run  ... hanimebar/caniship:latest  # same command as before
 ```
 
 Your data volume persists across updates.

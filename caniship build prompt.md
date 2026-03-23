@@ -169,7 +169,7 @@ Generate a clean, structured, readable report that includes:
 - **Payments**: Stripe
 - **Deployment**: Railway (Docker) — required for persistent Playwright + Lighthouse process. Vercel cannot run Playwright reliably.
 - **Domain**: caniship.actvli.com (subdomain under actvli.com, DNS on GreenGeeks with CNAME to Railway)
-- **Self-hosted**: Docker image published to Docker Hub as `caniship/caniship`
+- **Self-hosted**: Docker image published to Docker Hub as `hanimebar/caniship`
 
 ### Job Queue Architecture (required)
 Audit runs are long-running (5–30 min). Do NOT run them synchronously in an API route.

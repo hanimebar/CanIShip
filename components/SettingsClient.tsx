@@ -171,7 +171,7 @@ export function SettingsClient({ currentName, email, plan, isOAuthUser, hasStrip
 
   async function copyDockerCmd() {
     if (!licenseKey) return
-    const cmd = `docker run -p 3000:3000 \\\n  -e LICENSE_KEY=${licenseKey} \\\n  -e ANTHROPIC_API_KEY=your-key-here \\\n  -v caniship-data:/data \\\n  caniship/caniship:latest`
+    const cmd = `docker run -p 3000:3000 \\\n  -e LICENSE_KEY=${licenseKey} \\\n  -e ANTHROPIC_API_KEY=your-key-here \\\n  -v caniship-data:/data \\\n  hanimebar/caniship:latest`
     await navigator.clipboard.writeText(cmd)
     setCopiedCmd(true)
     setTimeout(() => setCopiedCmd(false), 2000)
@@ -291,7 +291,7 @@ export function SettingsClient({ currentName, email, plan, isOAuthUser, hasStrip
                 <div>
                   <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">Step 1 — Pull the image</p>
                   <div className="flex items-center gap-2 bg-dark-900 border border-dark-500 rounded-lg px-4 py-2.5">
-                    <code className="flex-1 text-sm font-mono text-neon-green">docker pull caniship/caniship:latest</code>
+                    <code className="flex-1 text-sm font-mono text-neon-green">docker pull hanimebar/caniship:latest</code>
                   </div>
                 </div>
 
@@ -327,7 +327,7 @@ export function SettingsClient({ currentName, email, plan, isOAuthUser, hasStrip
   -e LICENSE_KEY=`}<span className="text-neon-green">{licenseKey}</span>{` \\
   -e ANTHROPIC_API_KEY=`}<span className="text-amber-400">your-anthropic-key</span>{` \\
   -v caniship-data:/data \\
-  caniship/caniship:latest`}
+  hanimebar/caniship:latest`}
                   </pre>
                   <p className="text-xs text-gray-600 mt-2">
                     Then open <span className="text-gray-400 font-mono">http://localhost:3000</span> — same interface, fully local.

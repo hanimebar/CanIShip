@@ -13,7 +13,7 @@ echo ""
 if [ -z "$ANTHROPIC_API_KEY" ]; then
   echo "  ERROR: ANTHROPIC_API_KEY is required."
   echo ""
-  echo "  Run: docker run -p 3000:3000 -e ANTHROPIC_API_KEY=sk-... caniship/caniship"
+  echo "  Run: docker run -p 3000:3000 -e ANTHROPIC_API_KEY=sk-... hanimebar/caniship"
   echo ""
   exit 1
 fi
@@ -25,7 +25,7 @@ if [ -z "$DOCKER_LICENSE_KEY" ]; then
   echo "  Self-hosted Docker requires a Studio plan license key."
   echo "  Purchase at: https://caniship.actvli.com/pricing"
   echo ""
-  echo "  Run: docker run -p 3000:3000 -e ANTHROPIC_API_KEY=sk-... -e DOCKER_LICENSE_KEY=cis_... caniship/caniship"
+  echo "  Run: docker run -p 3000:3000 -e ANTHROPIC_API_KEY=sk-... -e DOCKER_LICENSE_KEY=cis_... hanimebar/caniship"
   echo ""
   exit 1
 fi

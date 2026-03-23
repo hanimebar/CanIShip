@@ -20,7 +20,7 @@ on:
 
 jobs:
   build-and-push:
-    name: Build & push caniship/caniship
+    name: Build & push hanimebar/caniship
     runs-on: ubuntu-latest
 
     steps:
@@ -51,8 +51,8 @@ jobs:
           push: true
           # Tag as both the exact version and latest
           tags: |
-            caniship/caniship:latest
-            caniship/caniship:${{ steps.version.outputs.version }}
+            hanimebar/caniship:latest
+            hanimebar/caniship:${{ steps.version.outputs.version }}
           # Cache layers between builds to keep push time fast
           cache-from: type=gha
           cache-to: type=gha,mode=max
@@ -65,6 +65,6 @@ jobs:
         with:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
-          repository: caniship/caniship
+          repository: hanimebar/caniship
           short-description: CanIShip self-hosted — AI-powered app QA for solo builders
           readme-filepath: ./DOCKER.md

@@ -83,7 +83,7 @@ const faqs = [
   },
   {
     q: "How does the Docker self-hosted option work?",
-    a: "Studio subscribers get a license key and a Docker image. Run `docker run -p 3000:3000 -e ANTHROPIC_API_KEY=sk-... -e LICENSE_KEY=... caniship/caniship`. No data leaves your machine.",
+    a: "Studio subscribers get a license key and a Docker image. Run `docker run -p 3000:3000 -e ANTHROPIC_API_KEY=sk-... -e LICENSE_KEY=... hanimebar/caniship`. No data leaves your machine.",
   },
   {
     q: 'How accurate is the ShipScore?',

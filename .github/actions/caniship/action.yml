@@ -50,7 +50,7 @@ inputs:
   docker_image:
     description: Docker image to use (override for custom builds)
     required: false
-    default: caniship/caniship:latest
+    default: hanimebar/caniship:latest
 
 outputs:
   ship_score:

@@ -607,12 +607,12 @@ docker run -d \
   -e DOCKER_LICENSE_KEY=cis_...your-license-key... \
   -v $(pwd)/caniship-data:/app/data \
   --name caniship \
-  caniship/caniship
+  hanimebar/caniship
 ```
 
 **On Windows (Command Prompt):**
 ```cmd
-docker run -d -p 3000:3000 -e ANTHROPIC_API_KEY=sk-ant-... -e DOCKER_LICENSE_KEY=cis_... -v %cd%/caniship-data:/app/data --name caniship caniship/caniship
+docker run -d -p 3000:3000 -e ANTHROPIC_API_KEY=sk-ant-... -e DOCKER_LICENSE_KEY=cis_... -v %cd%/caniship-data:/app/data --name caniship hanimebar/caniship
 ```
 
 Open **http://localhost:3000** in your browser. No account needed — Docker mode is single-user with no authentication.
@@ -632,7 +632,7 @@ docker start caniship
 ### Update to the latest version
 
 ```bash
-docker pull caniship/caniship
+docker pull hanimebar/caniship
 docker stop caniship && docker rm caniship
 # Re-run the docker run command above
 ```
