@@ -9,7 +9,7 @@ on:
       - 'lib/**'
       - 'components/**'
       - 'public/**'
-      - 'Dockerfile'
+      - 'Dockerfile.selfhosted'
       - 'docker-entrypoint.sh'
       - 'package.json'
       - 'package-lock.json'
@@ -47,6 +47,7 @@ jobs:
         uses: docker/build-push-action@v5
         with:
           context: .
+          file: Dockerfile.selfhosted
           push: true
           # Tag as both the exact version and latest
           tags: |
