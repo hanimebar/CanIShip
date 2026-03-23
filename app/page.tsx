@@ -92,13 +92,13 @@ export default async function LandingPage() {
 
           {/* Top strip */}
           <div className="flex items-center justify-between border-b border-dock-600 pb-2 mb-4">
-            <span className="text-dock-400 text-xs tracking-widest uppercase" style={{ fontFamily: "'Barlow Condensed', sans-serif" }}>
+            <span className="text-dock-300 text-xs tracking-widest uppercase" style={{ fontFamily: "'Barlow Condensed', sans-serif" }}>
               PORT AUTHORITY · CARGO INSPECTION DIVISION
             </span>
-            <span className="hidden md:block text-dock-400 text-xs tracking-widest" style={{ fontFamily: "'Barlow Condensed', sans-serif" }}>
+            <span className="hidden md:block text-dock-300 text-xs tracking-widest" style={{ fontFamily: "'Barlow Condensed', sans-serif" }}>
               {today}
             </span>
-            <span className="hidden md:block text-dock-400 text-xs tracking-widest uppercase" style={{ fontFamily: "'Barlow Condensed', sans-serif" }}>
+            <span className="hidden md:block text-dock-300 text-xs tracking-widest uppercase" style={{ fontFamily: "'Barlow Condensed', sans-serif" }}>
               Est. 2026 · Vol. I
             </span>
           </div>
@@ -126,17 +126,19 @@ export default async function LandingPage() {
 
           {/* Nav strip */}
           <div className="flex items-center justify-between pb-3">
-            <nav className="hidden md:flex items-center gap-6 text-xs uppercase tracking-widest text-dock-400" style={{ fontFamily: "'Barlow Condensed', sans-serif" }}>
-              <Link href="/pricing" className="py-3 hover:text-dock-100 transition-colors min-h-[44px] flex items-center">Pricing</Link>
-              <span className="text-dock-700">·</span>
-              <Link href="#how-it-works" className="py-3 hover:text-dock-100 transition-colors min-h-[44px] flex items-center">How It Works</Link>
-              <span className="text-dock-700">·</span>
-              <Link href="#standards" className="py-3 hover:text-dock-100 transition-colors min-h-[44px] flex items-center">Standards</Link>
+            <nav className="hidden md:flex items-center gap-6 text-xs uppercase tracking-widest text-dock-200" style={{ fontFamily: "'Barlow Condensed', sans-serif" }}>
+              <Link href="/pricing" className="py-3 hover:text-dock-50 transition-colors min-h-[44px] flex items-center">Pricing</Link>
+              <span className="text-dock-600">·</span>
+              <Link href="#how-it-works" className="py-3 hover:text-dock-50 transition-colors min-h-[44px] flex items-center">How It Works</Link>
+              <span className="text-dock-600">·</span>
+              <Link href="#standards" className="py-3 hover:text-dock-50 transition-colors min-h-[44px] flex items-center">Standards</Link>
+              <span className="text-dock-600">·</span>
+              <Link href="/leaderboard" className="py-3 hover:text-dock-50 transition-colors min-h-[44px] flex items-center">Leaderboard</Link>
             </nav>
             <div className="flex items-center gap-3 ml-auto">
               {user ? (
                 <>
-                  <Link href="/dashboard" className="hidden md:flex min-h-[44px] items-center text-xs uppercase tracking-widest text-dock-400 hover:text-dock-100 transition-colors px-2" style={{ fontFamily: "'Barlow Condensed', sans-serif" }}>
+                  <Link href="/dashboard" className="hidden md:flex min-h-[44px] items-center text-xs uppercase tracking-widest text-dock-300 hover:text-dock-100 transition-colors px-2" style={{ fontFamily: "'Barlow Condensed', sans-serif" }}>
                     Dashboard
                   </Link>
                   <Link
@@ -149,7 +151,7 @@ export default async function LandingPage() {
                 </>
               ) : (
                 <>
-                  <Link href="/login" className="hidden md:flex min-h-[44px] items-center text-xs uppercase tracking-widest text-dock-400 hover:text-dock-100 transition-colors px-2" style={{ fontFamily: "'Barlow Condensed', sans-serif" }}>
+                  <Link href="/login" className="hidden md:flex min-h-[44px] items-center text-xs uppercase tracking-widest text-dock-300 hover:text-dock-100 transition-colors px-2" style={{ fontFamily: "'Barlow Condensed', sans-serif" }}>
                     Sign In
                   </Link>
                   <Link
@@ -166,6 +168,8 @@ export default async function LandingPage() {
 
         </div>
       </header>
+
+      <main>
 
       {/* ── Above the fold ───────────────────────────────────── */}
       <section className="px-6 py-10 border-b border-dock-600">
@@ -205,7 +209,7 @@ export default async function LandingPage() {
                 </Link>
                 <Link
                   href="/pricing"
-                  className="min-h-[44px] flex items-center text-xs uppercase tracking-widest text-dock-400 hover:text-dock-100 transition-colors border-b border-dock-600"
+                  className="min-h-[44px] flex items-center text-xs uppercase tracking-widest text-dock-300 hover:text-dock-100 transition-colors border-b border-dock-600"
                   style={{ fontFamily: "'Barlow Condensed', sans-serif" }}
                 >
                   View Rates
@@ -222,7 +226,7 @@ export default async function LandingPage() {
 
                 {/* Manifest header */}
                 <div className="border-b-2 border-dock-100 pb-2 mb-3 text-center">
-                  <div className="text-xs uppercase tracking-widest text-dock-400 mb-1" style={{ fontFamily: "'Barlow Condensed', sans-serif" }}>
+                  <div className="text-xs uppercase tracking-widest text-dock-300 mb-1" style={{ fontFamily: "'Barlow Condensed', sans-serif" }}>
                     Inspection Report
                   </div>
                   <div className="text-dock-50 font-bold text-sm" style={{ fontFamily: "'Playfair Display', serif" }}>
@@ -250,7 +254,7 @@ export default async function LandingPage() {
 
                 {/* Score */}
                 <div className="mt-4 pt-3 border-t-2 border-dock-100 text-center">
-                  <div className="text-xs uppercase tracking-widest text-dock-400 mb-1" style={{ fontFamily: "'Barlow Condensed', sans-serif" }}>
+                  <div className="text-xs uppercase tracking-widest text-dock-300 mb-1" style={{ fontFamily: "'Barlow Condensed', sans-serif" }}>
                     ShipScore™
                   </div>
                   <div
@@ -341,7 +345,7 @@ export default async function LandingPage() {
                 key={field}
                 className={`grid grid-cols-2 md:grid-cols-3 px-4 py-3 text-sm ${i % 2 === 0 ? 'bg-dock-900' : 'bg-dock-800'} ${i < differentiatorsRows.length - 1 ? 'border-b border-dock-600' : ''}`}
               >
-                <span className="text-dock-400 text-xs uppercase tracking-wide" style={{ fontFamily: "'Barlow Condensed', sans-serif" }}>
+                <span className="text-dock-300 text-xs uppercase tracking-wide" style={{ fontFamily: "'Barlow Condensed', sans-serif" }}>
                   {field}
                 </span>
                 <span className="text-dock-100">{caniship}</span>
@@ -374,7 +378,7 @@ export default async function LandingPage() {
                 <div key={abbr} className="manifest-row">
                   <span className="field-name">{abbr}</span>
                   <span className="field-dots" />
-                  <span className="field-value text-xs text-dock-400">{full}</span>
+                  <span className="field-value text-xs text-dock-300">{full}</span>
                 </div>
               ))}
             </div>
@@ -386,7 +390,7 @@ export default async function LandingPage() {
               </div>
               <div className="space-y-4">
                 <div className="border-l-2 border-stamp-green pl-4">
-                  <div className="text-xs uppercase tracking-widest text-dock-400 mb-1" style={{ fontFamily: "'Barlow Condensed', sans-serif" }}>
+                  <div className="text-xs uppercase tracking-widest text-dock-300 mb-1" style={{ fontFamily: "'Barlow Condensed', sans-serif" }}>
                     Within Scope
                   </div>
                   <p className="text-dock-300 text-sm leading-relaxed">
@@ -396,7 +400,7 @@ export default async function LandingPage() {
                   </p>
                 </div>
                 <div className="border-l-2 border-stamp-red pl-4">
-                  <div className="text-xs uppercase tracking-widest text-dock-400 mb-1" style={{ fontFamily: "'Barlow Condensed', sans-serif" }}>
+                  <div className="text-xs uppercase tracking-widest text-dock-300 mb-1" style={{ fontFamily: "'Barlow Condensed', sans-serif" }}>
                     Outside Scope
                   </div>
                   <p className="text-dock-300 text-sm leading-relaxed">
@@ -406,7 +410,7 @@ export default async function LandingPage() {
                   </p>
                 </div>
                 <div className="border-l-2 border-stamp-amber pl-4">
-                  <div className="text-xs uppercase tracking-widest text-dock-400 mb-1" style={{ fontFamily: "'Barlow Condensed', sans-serif" }}>
+                  <div className="text-xs uppercase tracking-widest text-dock-300 mb-1" style={{ fontFamily: "'Barlow Condensed', sans-serif" }}>
                     Inspection Cadence
                   </div>
                   <p className="text-dock-300 text-sm leading-relaxed">
@@ -505,7 +509,7 @@ export default async function LandingPage() {
                   <span className="text-4xl font-black text-dock-50" style={{ fontFamily: "'Playfair Display', serif" }}>{plan.price}</span>
                   <span className="text-dock-500 text-sm">{plan.period}</span>
                 </div>
-                <p className="text-dock-400 text-xs mb-5 leading-relaxed">{plan.sub}</p>
+                <p className="text-dock-300 text-xs mb-5 leading-relaxed">{plan.sub}</p>
 
                 <div className="border-t border-dock-600 pt-4 space-y-2 mb-6">
                   {plan.items.map(item => (
@@ -581,6 +585,8 @@ export default async function LandingPage() {
         </div>
       </section>
 
+      </main>
+
       {/* ── Footer ───────────────────────────────────────────── */}
       <footer className="px-6 pt-10 pb-8 border-t-4 border-dock-100">
         <div className="max-w-6xl mx-auto">
@@ -606,7 +612,7 @@ export default async function LandingPage() {
               <div className="text-xs uppercase tracking-widest text-dock-500 border-b border-dock-600 pb-2 mb-3" style={{ fontFamily: "'Barlow Condensed', sans-serif" }}>
                 Product
               </div>
-              <ul className="space-y-0 text-xs text-dock-400" style={{ fontFamily: "'Barlow Condensed', sans-serif" }}>
+              <ul className="space-y-0 text-xs text-dock-300" style={{ fontFamily: "'Barlow Condensed', sans-serif" }}>
                 {[
                   ['Pricing', '/pricing'],
                   ['Run an Inspection', '/audit/new'],
@@ -638,7 +644,7 @@ export default async function LandingPage() {
               <div className="text-xs uppercase tracking-widest text-dock-500 border-b border-dock-600 pb-2 mb-3" style={{ fontFamily: "'Barlow Condensed', sans-serif" }}>
                 Legal
               </div>
-              <ul className="space-y-0 text-xs text-dock-400" style={{ fontFamily: "'Barlow Condensed', sans-serif" }}>
+              <ul className="space-y-0 text-xs text-dock-300" style={{ fontFamily: "'Barlow Condensed', sans-serif" }}>
                 <li><Link href="/privacy" className="min-h-[44px] flex items-center hover:text-dock-200 uppercase tracking-widest transition-colors">Privacy Policy</Link></li>
                 <li><Link href="/terms" className="min-h-[44px] flex items-center hover:text-dock-200 uppercase tracking-widest transition-colors">Terms of Service</Link></li>
               </ul>
