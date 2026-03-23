@@ -1,6 +1,7 @@
 import { createRequire } from 'module'
 import { fileURLToPath } from 'url'
 import path from 'path'
+import { withSentryConfig } from '@sentry/nextjs'
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
@@ -101,4 +102,22 @@ const nextConfig = {
   },
 }
 
-export default nextConfig
+export default withSentryConfig(nextConfig, {
+  // Sentry org/project — set these in your Sentry dashboard
+  org: process.env.SENTRY_ORG,
+  project: process.env.SENTRY_PROJECT,
+
+  // Only upload source maps during CI/CD builds where SENTRY_AUTH_TOKEN is set
+  // This keeps source maps off the Railway server and out of the Docker image
+  authToken: process.env.SENTRY_AUTH_TOKEN,
+  silent: !process.env.SENTRY_AUTH_TOKEN,
+
+  // Don't upload source maps if token is missing (local dev, Docker)
+  sourcemaps: {
+    disable: !process.env.SENTRY_AUTH_TOKEN,
+  },
+
+  // Suppress the "Sentry CLI not found" warning in environments without it
+  disableLogger: true,
+  telemetry: false,
+})
