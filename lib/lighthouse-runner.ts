@@ -89,19 +89,25 @@ export async function runLighthouseAudit(options: LighthouseOptions): Promise<Li
     const lighthouseFn = lighthouse.default || lighthouse
     const launch = chromeLauncher.launch || chromeLauncher.default?.launch
 
+    // Resolve Playwright's bundled Chromium path so chrome-launcher uses the
+    // same binary as everything else. Without this, chrome-launcher scans
+    // system paths (/usr/bin/chromium etc.) which are not installed in the
+    // Docker image — causing a silent "Chrome not found" failure every time.
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    const { chromium: pwChromium } = require('playwright')
+    const chromiumPath: string = pwChromium.executablePath()
+
     const chrome = await launch({
+      chromePath: chromiumPath,
       chromeFlags: [
-        '--headless',              // Use --headless (not --headless=new) for Railway/Docker compatibility
+        '--headless',
         '--no-sandbox',
         '--disable-setuid-sandbox',
         '--disable-dev-shm-usage',
         '--disable-gpu',
-        '--no-zygote',             // Avoids zygote process issues in Docker
+        '--no-zygote',
         '--disable-extensions',
         '--disable-component-extensions-with-background-pages',
-        // NOTE: --single-process is intentionally NOT included here.
-        // It prevents Chrome from spawning renderer processes that Lighthouse
-        // requires, causing silent failures in Docker/Railway environments.
       ],
     })
 

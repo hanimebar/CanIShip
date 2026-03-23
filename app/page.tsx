@@ -36,8 +36,55 @@ export default async function LandingPage() {
     weekday: 'long', day: 'numeric', month: 'long', year: 'numeric'
   }).toUpperCase()
 
+  const jsonLd = {
+    '@context': 'https://schema.org',
+    '@graph': [
+      {
+        '@type': 'WebSite',
+        '@id': 'https://caniship.actvli.com/#website',
+        url: 'https://caniship.actvli.com',
+        name: 'CanIShip',
+        description: 'AI-powered pre-launch QA audit for web applications. Functional tests, accessibility, performance, security — one URL, one score.',
+        publisher: { '@id': 'https://caniship.actvli.com/#organization' },
+      },
+      {
+        '@type': 'Organization',
+        '@id': 'https://caniship.actvli.com/#organization',
+        name: 'Äctvli Responsible Consulting',
+        url: 'https://caniship.actvli.com',
+        logo: {
+          '@type': 'ImageObject',
+          url: 'https://caniship.actvli.com/og-image.svg',
+        },
+        contactPoint: {
+          '@type': 'ContactPoint',
+          email: 'reachout@actvli.com',
+          contactType: 'customer support',
+        },
+      },
+      {
+        '@type': 'SoftwareApplication',
+        '@id': 'https://caniship.actvli.com/#app',
+        name: 'CanIShip',
+        applicationCategory: 'DeveloperApplication',
+        operatingSystem: 'Web',
+        url: 'https://caniship.actvli.com',
+        description: 'Automated pre-launch QA for web applications. Eight audit layers: functional tests, accessibility (WCAG 2.1 AA), Core Web Vitals, security headers, SEO, mobile readiness.',
+        offers: [
+          { '@type': 'Offer', price: '0', priceCurrency: 'EUR', name: 'Free Berth' },
+          { '@type': 'Offer', price: '19', priceCurrency: 'EUR', name: 'Builder Berth' },
+          { '@type': 'Offer', price: '49', priceCurrency: 'EUR', name: 'Studio Berth' },
+        ],
+      },
+    ],
+  }
+
   return (
     <div className="min-h-screen bg-dock-900 text-dock-100" style={{ fontFamily: "'Special Elite', 'Courier New', monospace" }}>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+      />
 
       {/* ── Masthead ─────────────────────────────────────────── */}
       <header className="border-b-4 border-dock-100 pt-6 pb-0 px-6">
@@ -148,17 +195,17 @@ export default async function LandingPage() {
                 <strong className="text-stamp-green">CLEARED FOR DEPARTURE</strong> or{' '}
                 <strong className="text-stamp-red">HOLD — DEFECTS FOUND</strong>.
               </p>
-              <div className="flex items-center gap-4">
+              <div className="flex flex-wrap items-center gap-4">
                 <Link
                   href="/signup"
-                  className="px-6 py-3 bg-amber text-dock-900 font-bold uppercase tracking-widest text-sm hover:bg-amber-dim transition-colors"
+                  className="min-h-[44px] flex items-center px-6 bg-amber text-dock-900 font-bold uppercase tracking-widest text-sm hover:bg-amber-dim transition-colors"
                   style={{ fontFamily: "'Barlow Condensed', sans-serif" }}
                 >
                   File Your First Manifest Free →
                 </Link>
                 <Link
                   href="/pricing"
-                  className="text-xs uppercase tracking-widest text-dock-400 hover:text-dock-100 transition-colors border-b border-dock-600 pb-0.5"
+                  className="min-h-[44px] flex items-center text-xs uppercase tracking-widest text-dock-400 hover:text-dock-100 transition-colors border-b border-dock-600"
                   style={{ fontFamily: "'Barlow Condensed', sans-serif" }}
                 >
                   View Rates
