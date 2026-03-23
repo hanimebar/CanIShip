@@ -49,21 +49,20 @@ export default function RootLayout({
 }: Readonly<{
   children: React.ReactNode
 }>) {
-  const plausibleDomain = process.env.NEXT_PUBLIC_PLAUSIBLE_DOMAIN
-
   return (
     <html lang="en" className="dark">
       <body className="bg-dark-900 text-white antialiased min-h-screen">
         {children}
         {/* Plausible Analytics — privacy-first, no cookies, GDPR compliant */}
-        {plausibleDomain && (
-          <Script
-            defer
-            data-domain={plausibleDomain}
-            src="https://plausible.io/js/script.js"
-            strategy="afterInteractive"
-          />
-        )}
+        <Script
+          src="https://plausible.io/js/pa-CvZG1CbL6aEjx6rqGsKN1.js"
+          strategy="afterInteractive"
+        />
+        <Script id="plausible-init" strategy="afterInteractive">{`
+          window.plausible=window.plausible||function(){(plausible.q=plausible.q||[]).push(arguments)};
+          window.plausible.init=window.plausible.init||function(i){window.plausible.o=i||{}};
+          window.plausible.init();
+        `}</Script>
       </body>
     </html>
   )
