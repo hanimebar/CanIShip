@@ -62,7 +62,10 @@ export async function runAxeAudit(options: AxeOptions): Promise<AxeResults> {
   })
 
   try {
-    const page = await browser.newPage()
+    // Playwright requires a context before a page — newPage() alone throws
+    // "Please use browser.newContext()" in recent Playwright versions
+    const context = await browser.newContext()
+    const page = await context.newPage()
 
     // Use domcontentloaded — networkidle can hang on sites with strict CSP
     // (CSP blocks external resources that never resolve, so idle is never reached)

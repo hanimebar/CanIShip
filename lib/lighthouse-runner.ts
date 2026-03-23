@@ -95,7 +95,15 @@ export async function runLighthouseAudit(options: LighthouseOptions): Promise<Li
     // Docker image — causing a silent "Chrome not found" failure every time.
     // eslint-disable-next-line @typescript-eslint/no-require-imports
     const { chromium: pwChromium } = require('playwright')
-    const chromiumPath: string = pwChromium.executablePath()
+    const chromiumPath: string | undefined = pwChromium.executablePath?.()
+
+    // If executablePath() returns undefined (can happen when Playwright's
+    // browser cache is unavailable in the current environment), chrome-launcher
+    // would throw "path argument must be of type string". Skip straight to PSI.
+    if (!chromiumPath || typeof chromiumPath !== 'string') {
+      const psiResult = await runPsiAudit(url)
+      return psiResult ?? { ...emptyResults, error: 'Chromium path unavailable and PSI fallback failed' }
+    }
 
     const chrome = await launch({
       chromePath: chromiumPath,
