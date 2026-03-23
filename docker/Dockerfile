@@ -88,11 +88,7 @@ COPY --from=builder /app/.next/standalone ./
 COPY --from=builder /app/.next/static ./.next/static
 COPY --from=builder /app/public ./public
 
-# Copy entrypoint script
-COPY docker/docker-entrypoint.sh ./docker-entrypoint.sh
-RUN chmod +x ./docker-entrypoint.sh
-
-# Create directory for local report storage (Docker mode)
+# Create directory for local report storage
 RUN mkdir -p /app/data/reports /app/data/screenshots && \
     chown -R nextjs:nodejs /app/data
 
@@ -105,5 +101,4 @@ EXPOSE 3000
 ENV PORT=3000
 ENV HOSTNAME=0.0.0.0
 
-ENTRYPOINT ["./docker-entrypoint.sh"]
 CMD ["node", "server.js"]
