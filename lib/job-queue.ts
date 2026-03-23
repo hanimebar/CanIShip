@@ -179,6 +179,7 @@ async function runAuditPipeline(job: AuditJob) {
     url: job.url,
     description: job.description,
     flows: job.flows,
+    target_platform: job.target_platform ?? 'all',
     playwrightResults,
     axeResults,
     lighthouseResults,

@@ -53,6 +53,7 @@ CREATE TABLE IF NOT EXISTS public.audit_jobs (
   description TEXT NOT NULL,
   flows TEXT[] DEFAULT '{}',
   depth TEXT NOT NULL DEFAULT 'quick' CHECK (depth IN ('quick', 'standard', 'deep')),
+  target_platform TEXT NOT NULL DEFAULT 'all' CHECK (target_platform IN ('mobile', 'desktop', 'all')),
   status TEXT NOT NULL DEFAULT 'queued' CHECK (status IN ('queued', 'running', 'complete', 'failed')),
   error_message TEXT,
   worker_id TEXT,

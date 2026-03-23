@@ -54,20 +54,23 @@ function getDb(): SQLiteDB {
   // Create tables
   db.exec(`
     CREATE TABLE IF NOT EXISTS audit_jobs (
-      id           TEXT PRIMARY KEY,
-      user_id      TEXT NOT NULL DEFAULT 'docker-local',
-      url          TEXT NOT NULL,
-      description  TEXT NOT NULL DEFAULT '',
-      flows        TEXT NOT NULL DEFAULT '[]',
-      depth        TEXT NOT NULL DEFAULT 'quick',
-      status       TEXT NOT NULL DEFAULT 'queued',
-      error_message TEXT,
-      worker_id    TEXT,
-      callback_url TEXT,
-      started_at   TEXT,
-      completed_at TEXT,
-      created_at   TEXT NOT NULL
+      id              TEXT PRIMARY KEY,
+      user_id         TEXT NOT NULL DEFAULT 'docker-local',
+      url             TEXT NOT NULL,
+      description     TEXT NOT NULL DEFAULT '',
+      flows           TEXT NOT NULL DEFAULT '[]',
+      depth           TEXT NOT NULL DEFAULT 'quick',
+      target_platform TEXT NOT NULL DEFAULT 'all',
+      status          TEXT NOT NULL DEFAULT 'queued',
+      error_message   TEXT,
+      worker_id       TEXT,
+      callback_url    TEXT,
+      started_at      TEXT,
+      completed_at    TEXT,
+      created_at      TEXT NOT NULL
     );
+    -- Add target_platform to existing DBs (safe to run multiple times)
+    ALTER TABLE audit_jobs ADD COLUMN IF NOT EXISTS target_platform TEXT NOT NULL DEFAULT 'all';
 
     CREATE TABLE IF NOT EXISTS audit_reports (
       id           TEXT PRIMARY KEY,
@@ -92,9 +95,9 @@ function getDb(): SQLiteDB {
       const id = randomUUID()
       const now = new Date().toISOString()
       db.prepare(`
-        INSERT INTO audit_jobs (id, user_id, url, description, flows, depth, status, callback_url, created_at)
-        VALUES (?, ?, ?, ?, ?, ?, 'queued', ?, ?)
-      `).run(id, job.user_id, job.url, job.description, JSON.stringify(job.flows || []), job.depth, job.callback_url ?? null, now)
+        INSERT INTO audit_jobs (id, user_id, url, description, flows, depth, target_platform, status, callback_url, created_at)
+        VALUES (?, ?, ?, ?, ?, ?, ?, 'queued', ?, ?)
+      `).run(id, job.user_id, job.url, job.description, JSON.stringify(job.flows || []), job.depth, job.target_platform ?? 'all', job.callback_url ?? null, now)
       return this.getJob(id)!
     },
 
@@ -154,6 +157,7 @@ function deserializeJob(row: Record<string, unknown>): DockerJob {
     description: row.description as string,
     flows: JSON.parse(row.flows as string || '[]') as string[],
     depth: row.depth as 'quick' | 'standard' | 'deep',
+    target_platform: (row.target_platform as 'mobile' | 'desktop' | 'all') ?? 'all',
     status: row.status as 'queued' | 'running' | 'complete' | 'failed',
     error_message: row.error_message as string | undefined,
     worker_id: row.worker_id as string | undefined,

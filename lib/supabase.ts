@@ -23,6 +23,8 @@ export function createSupabaseServiceClient() {
   )
 }
 
+export type TargetPlatform = 'mobile' | 'desktop' | 'all'
+
 export type AuditJob = {
   id: string
   user_id: string
@@ -30,6 +32,7 @@ export type AuditJob = {
   description: string
   flows: string[]
   depth: 'quick' | 'standard' | 'deep'
+  target_platform: TargetPlatform   // Primary device target — affects mobile score weighting
   status: 'queued' | 'running' | 'complete' | 'failed'
   callback_url?: string    // Optional webhook URL — fired on completion or failure
   error_message?: string

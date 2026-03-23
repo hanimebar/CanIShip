@@ -95,7 +95,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Invalid JSON body' }, { status: 400 })
     }
 
-    const { url, description, flows, depth, callback_url } = body
+    const { url, description, flows, depth, callback_url, target_platform } = body
 
     if (!url || typeof url !== 'string') {
       return NextResponse.json({ error: 'url is required' }, { status: 400 })
@@ -144,6 +144,9 @@ export async function POST(req: NextRequest) {
 
     const validDepths = ['quick', 'standard', 'deep']
     const auditDepth = validDepths.includes(depth as string) ? (depth as string) : 'quick'
+
+    const validPlatforms = ['mobile', 'desktop', 'all']
+    const auditPlatform = validPlatforms.includes(target_platform as string) ? (target_platform as string) : 'all'
 
     // ── Atomic counter increment via Postgres RPC ───────────────────────────
     // Falls back to the legacy read-modify-write if the RPC is not deployed yet.
@@ -224,6 +227,7 @@ export async function POST(req: NextRequest) {
         description: description.trim(),
         flows: Array.isArray(flows) ? flows.filter((f: unknown) => typeof f === 'string') : [],
         depth: auditDepth,
+        target_platform: auditPlatform,
         status: 'queued',
         ...(callbackUrl ? { callback_url: callbackUrl } : {}),
       })
@@ -306,7 +310,7 @@ async function handleDockerPost(req: NextRequest) {
     return NextResponse.json({ error: 'Invalid JSON body' }, { status: 400 })
   }
 
-  const { url, description, flows, depth, callback_url } = body
+  const { url, description, flows, depth, callback_url, target_platform } = body
 
   if (!url || typeof url !== 'string') {
     return NextResponse.json({ error: 'url is required' }, { status: 400 })
@@ -347,12 +351,16 @@ async function handleDockerPost(req: NextRequest) {
   const validDepths = ['quick', 'standard', 'deep']
   const auditDepth = validDepths.includes(depth as string) ? (depth as string) : 'quick'
 
+  const validPlatforms = ['mobile', 'desktop', 'all']
+  const auditPlatform = validPlatforms.includes(target_platform as string) ? (target_platform as 'mobile' | 'desktop' | 'all') : 'all'
+
   const job = dockerDb.createJob({
     user_id: 'docker-local',
     url: parsedUrl.href,
     description: (description as string).trim(),
     flows: Array.isArray(flows) ? (flows as unknown[]).filter((f): f is string => typeof f === 'string') : [],
     depth: auditDepth as 'quick' | 'standard' | 'deep',
+    target_platform: auditPlatform,
     callback_url: callbackUrl,
   })
 

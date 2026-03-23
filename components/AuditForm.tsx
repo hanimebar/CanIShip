@@ -4,6 +4,33 @@ import { useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 
 type Depth = 'quick' | 'standard' | 'deep'
+type TargetPlatform = 'mobile' | 'desktop' | 'all'
+
+const platformOptions: Array<{
+  value: TargetPlatform
+  label: string
+  icon: string
+  description: string
+}> = [
+  {
+    value: 'mobile',
+    label: 'Mobile-first',
+    icon: '📱',
+    description: 'Primarily used on phones & tablets (≤768px)',
+  },
+  {
+    value: 'all',
+    label: 'All screens',
+    icon: '🌐',
+    description: 'Must work everywhere — mobile and desktop',
+  },
+  {
+    value: 'desktop',
+    label: 'Desktop / Web app',
+    icon: '🖥️',
+    description: 'Primarily used on laptops & desktops (≥1024px)',
+  },
+]
 
 const depthOptions: Array<{
   value: Depth
@@ -41,9 +68,10 @@ type Props = {
   defaultDescription?: string
   defaultFlows?: string
   defaultDepth?: Depth
+  defaultPlatform?: TargetPlatform
 }
 
-export function AuditForm({ userPlan = 'free', defaultUrl = '', defaultDescription = '', defaultFlows = '', defaultDepth = 'quick' }: Props) {
+export function AuditForm({ userPlan = 'free', defaultUrl = '', defaultDescription = '', defaultFlows = '', defaultDepth = 'quick', defaultPlatform = 'all' }: Props) {
   const router = useRouter()
   const [isPending, startTransition] = useTransition()
 
@@ -51,6 +79,7 @@ export function AuditForm({ userPlan = 'free', defaultUrl = '', defaultDescripti
   const [description, setDescription] = useState(defaultDescription)
   const [flows, setFlows] = useState(defaultFlows)
   const [depth, setDepth] = useState<Depth>(defaultDepth)
+  const [platform, setPlatform] = useState<TargetPlatform>(defaultPlatform)
   const [error, setError] = useState('')
   const [isSubmitting, setIsSubmitting] = useState(false)
 
@@ -101,6 +130,7 @@ export function AuditForm({ userPlan = 'free', defaultUrl = '', defaultDescripti
           description: description.trim(),
           flows: flowList,
           depth,
+          target_platform: platform,
         }),
       })
 
@@ -168,6 +198,40 @@ export function AuditForm({ userPlan = 'free', defaultUrl = '', defaultDescripti
           {description.length} chars {description.length < 10 && description.length > 0 && (
             <span className="text-orange-400">(min 10)</span>
           )}
+        </div>
+      </div>
+
+      {/* Target platform */}
+      <div>
+        <label className="block text-sm font-semibold text-gray-300 mb-1">
+          Primary target device
+        </label>
+        <p className="text-xs text-gray-500 mb-3">
+          Affects how mobile responsiveness is weighted in your score.
+        </p>
+        <div className="grid grid-cols-3 gap-3">
+          {platformOptions.map((option) => {
+            const selected = platform === option.value
+            return (
+              <button
+                key={option.value}
+                type="button"
+                onClick={() => setPlatform(option.value)}
+                disabled={isSubmitting}
+                className={`p-3 rounded-lg border text-left transition-all ${
+                  selected
+                    ? 'border-neon-green bg-neon-green/10'
+                    : 'border-dark-400 bg-dark-700 hover:border-dark-300'
+                }`}
+              >
+                <div className="text-xl mb-1">{option.icon}</div>
+                <div className={`font-semibold text-xs mb-0.5 ${selected ? 'text-neon-green' : 'text-white'}`}>
+                  {option.label}
+                </div>
+                <div className="text-xs text-gray-500 leading-relaxed">{option.description}</div>
+              </button>
+            )
+          })}
         </div>
       </div>
 

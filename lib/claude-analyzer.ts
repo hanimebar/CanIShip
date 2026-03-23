@@ -25,6 +25,7 @@ export type ClaudeAnalyzerInput = {
   description: string
   flows: string[]
   tier: ReportTier
+  target_platform?: 'mobile' | 'desktop' | 'all'
   playwrightResults: PlaywrightResults
   axeResults: AxeResults
   lighthouseResults: LighthouseResults
@@ -152,13 +153,32 @@ export async function analyzeWithClaude(input: ClaudeAnalyzerInput): Promise<Cla
 
 // ─── User prompt (data payload — same for all tiers, schema request varies) ─
 
+const PLATFORM_CONTEXT: Record<string, string> = {
+  mobile: `## Target Platform: MOBILE-FIRST
+This app is designed primarily for mobile devices (phones and tablets, ≤768px screens).
+Mobile responsiveness, touch targets, and small-screen layout are CRITICAL — weight them heavily.
+Desktop layout issues are low priority.`,
+
+  desktop: `## Target Platform: DESKTOP / WEB APP
+This app is designed primarily for desktop and laptop users (≥1024px screens).
+Mobile responsiveness issues (touch target sizes, small-viewport layout, horizontal scroll on 375px) should be NOTED but carry significantly reduced weight in the overall score — approximately 30% of their normal impact.
+This is a deliberate product decision, not a defect. Do not penalise heavily for mobile-only issues.
+Prioritise functional correctness, performance, security, and desktop UX instead.`,
+
+  all: `## Target Platform: ALL SCREENS
+This app must work across all device sizes. Apply standard weighting to all dimensions including mobile.`,
+}
+
 function buildUserPrompt(input: ClaudeAnalyzerInput): string {
-  const { url, description, flows, tier, playwrightResults, axeResults,
+  const { url, description, flows, tier, target_platform = 'all',
+          playwrightResults, axeResults,
           lighthouseResults, securityResults, seoResults, mobileResults } = input
 
   const sections: string[] = []
 
   sections.push(`# App Audit Request — Tier: ${tier.toUpperCase()}
+
+${PLATFORM_CONTEXT[target_platform]}
 
 **URL**: ${url}
 **Description**: ${description}

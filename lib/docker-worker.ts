@@ -117,6 +117,7 @@ async function runDockerAuditPipeline(jobId: string) {
 
   const claudeReport = await analyzeWithClaude({
     url: job.url, description: job.description, flows: job.flows,
+    target_platform: job.target_platform ?? 'all',
     playwrightResults, axeResults, lighthouseResults, securityResults,
     seoResults, mobileResults, screenshots: playwrightResults.screenshots || [],
     tier,
