@@ -27,15 +27,20 @@ async function getEntries(): Promise<Entry[]> {
     if (DOCKER_MODE) {
       const { dockerDb } = await import('@/lib/docker-db')
       const cutoff = new Date(Date.now() - SEVEN_DAYS_MS).toISOString()
+      const seen = new Set<string>()
       return dockerDb.listJobs()
         .filter(j => j.status === 'complete' && j.is_public !== false && j.created_at >= cutoff)
-        .flatMap(j => {
+        .sort((a, b) => b.created_at.localeCompare(a.created_at))
+        .reduce<Entry[]>((acc, j) => {
           const report = dockerDb.getReport(j.id)
-          if (!report) return []
+          if (!report) return acc
           let hostname = j.url
           try { hostname = new URL(j.url).hostname } catch { /* leave as-is */ }
-          return [{ hostname, description: j.description.slice(0, 120), score: report.ship_score, verdict: report.ship_verdict, app_icon_url: j.app_icon_url ?? null }]
-        })
+          if (seen.has(hostname)) return acc
+          seen.add(hostname)
+          acc.push({ hostname, description: j.description.slice(0, 120), score: report.ship_score, verdict: report.ship_verdict, app_icon_url: j.app_icon_url ?? null })
+          return acc
+        }, [])
         .sort((a, b) => b.score - a.score)
         .slice(0, 20)
     }
@@ -48,15 +53,22 @@ async function getEntries(): Promise<Entry[]> {
       .select('ship_score, ship_verdict, audit_jobs!inner(url, description, is_public, created_at, app_icon_url)')
       .eq('audit_jobs.is_public', true)
       .gte('audit_jobs.created_at', cutoff)
-      .order('ship_score', { ascending: false })
-      .limit(20)
+      .order('created_at', { ascending: false, referencedTable: 'audit_jobs' })
+      .limit(200)
 
-    return (data ?? []).map(r => {
-      const job = r.audit_jobs as unknown as { url: string; description: string; app_icon_url?: string }
-      let hostname = job.url
-      try { hostname = new URL(job.url).hostname } catch { /* leave as-is */ }
-      return { hostname, description: job.description.slice(0, 120), score: r.ship_score, verdict: r.ship_verdict, app_icon_url: job.app_icon_url ?? null }
-    })
+    const seen = new Set<string>()
+    return (data ?? [])
+      .reduce<Entry[]>((acc, r) => {
+        const job = r.audit_jobs as unknown as { url: string; description: string; app_icon_url?: string }
+        let hostname = job.url
+        try { hostname = new URL(job.url).hostname } catch { /* leave as-is */ }
+        if (seen.has(hostname)) return acc
+        seen.add(hostname)
+        acc.push({ hostname, description: job.description.slice(0, 120), score: r.ship_score, verdict: r.ship_verdict, app_icon_url: job.app_icon_url ?? null })
+        return acc
+      }, [])
+      .sort((a, b) => b.score - a.score)
+      .slice(0, 20)
   } catch {
     return []
   }
