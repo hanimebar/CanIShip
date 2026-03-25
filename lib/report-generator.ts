@@ -83,7 +83,7 @@ export function generateReport(claudeReport: ClaudeReport, raw: RawResults): Cla
   report.passed_checks = deduplicateByTitle(report.passed_checks)
 
   // ---- Clamp score ----
-  report.overall_score = Math.min(100, Math.max(0, Math.round(report.overall_score)))
+  report.overall_score = Math.round(Math.min(100, Math.max(0, report.overall_score)) * 100) / 100
 
   // ---- Ensure ship_verdict aligns with score ----
   if (report.critical_bugs.length > 0 && report.ship_verdict === 'yes') {
