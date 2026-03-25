@@ -53,13 +53,19 @@ async function getEntries(): Promise<Entry[]> {
       .select('ship_score, ship_verdict, audit_jobs!inner(url, description, is_public, created_at, app_icon_url)')
       .eq('audit_jobs.is_public', true)
       .gte('audit_jobs.created_at', cutoff)
-      .order('created_at', { ascending: false, referencedTable: 'audit_jobs' })
       .limit(200)
 
+    // Sort by created_at DESC in JS (don't rely on referencedTable ordering),
+    // then deduplicate by hostname keeping the most recent audit per product.
     const seen = new Set<string>()
     return (data ?? [])
+      .sort((a, b) => {
+        const jobA = a.audit_jobs as unknown as { created_at: string }
+        const jobB = b.audit_jobs as unknown as { created_at: string }
+        return jobB.created_at.localeCompare(jobA.created_at)
+      })
       .reduce<Entry[]>((acc, r) => {
-        const job = r.audit_jobs as unknown as { url: string; description: string; app_icon_url?: string }
+        const job = r.audit_jobs as unknown as { url: string; description: string; created_at: string; app_icon_url?: string }
         let hostname = job.url
         try { hostname = new URL(job.url).hostname } catch { /* leave as-is */ }
         if (seen.has(hostname)) return acc

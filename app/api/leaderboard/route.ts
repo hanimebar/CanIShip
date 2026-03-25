@@ -55,7 +55,6 @@ export async function GET() {
       .select('ship_score, ship_verdict, audit_jobs!inner(url, description, is_public, created_at, app_icon_url)')
       .eq('audit_jobs.is_public', true)
       .gte('audit_jobs.created_at', cutoff)
-      .order('created_at', { ascending: false, referencedTable: 'audit_jobs' })
       .limit(200)
 
     if (error) {
@@ -63,11 +62,16 @@ export async function GET() {
       return NextResponse.json({ error: 'Failed to load leaderboard' }, { status: 500 })
     }
 
-    // Deduplicate: keep the most recent audit per hostname, then sort by score.
+    // Sort by created_at DESC in JS, deduplicate by hostname (most recent wins), then rank by score.
     const seen = new Set<string>()
     const entries = (data ?? [])
+      .sort((a, b) => {
+        const jobA = a.audit_jobs as unknown as { created_at: string }
+        const jobB = b.audit_jobs as unknown as { created_at: string }
+        return jobB.created_at.localeCompare(jobA.created_at)
+      })
       .reduce<{ hostname: string; description: string; score: number; verdict: string; app_icon_url: string | null }[]>((acc, r) => {
-        const job = r.audit_jobs as unknown as { url: string; description: string; app_icon_url?: string }
+        const job = r.audit_jobs as unknown as { url: string; description: string; created_at: string; app_icon_url?: string }
         let hostname = job.url
         try { hostname = new URL(job.url).hostname } catch { /* leave as-is */ }
         if (seen.has(hostname)) return acc
