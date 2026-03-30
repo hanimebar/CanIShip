@@ -77,7 +77,8 @@ export async function runAxeAudit(options: AxeOptions): Promise<AxeResults> {
     // Brief pause for JS-rendered content
     await page.waitForTimeout(1500)
 
-    const axeBuilder = new AxeBuilder({ page })
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const axeBuilder = new AxeBuilder({ page: page as any })
       .withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa', 'best-practice'])
       .exclude('#axe-temp')
 
