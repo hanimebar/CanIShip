@@ -24,7 +24,7 @@ export default defineConfig({
 
   build: {
     extensions: [
-      playwright(),
+      playwright({ browser: 'chromium' }),
     ],
   },
 
