@@ -22,5 +22,5 @@
     }
   },
   "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx", ".next/types/**/*.ts"],
-  "exclude": ["node_modules", "docker"]
+  "exclude": ["node_modules", "docker", "trigger", "trigger.config.ts"]
 }

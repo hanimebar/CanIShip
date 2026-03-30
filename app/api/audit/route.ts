@@ -95,7 +95,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Invalid JSON body' }, { status: 400 })
     }
 
-    const { url, description, flows, depth, callback_url, target_platform, is_public, app_icon_url } = body
+    const { url, description, flows, depth, callback_url, target_platform, is_public, app_icon_url, auth_config } = body
 
     if (!url || typeof url !== 'string') {
       return NextResponse.json({ error: 'url is required' }, { status: 400 })
@@ -219,6 +219,34 @@ export async function POST(req: NextRequest) {
       )
     }
 
+    // ── Validate auth_config if provided ────────────────────────────────────
+    // auth_config is stored temporarily in audit_jobs.auth_config (JSONB) and
+    // cleared by the worker before any audit runs.
+    // SQL: ALTER TABLE audit_jobs ADD COLUMN IF NOT EXISTS auth_config JSONB;
+    let validatedAuthConfig: Record<string, unknown> | undefined
+    if (auth_config !== undefined) {
+      if (typeof auth_config !== 'object' || auth_config === null) {
+        return NextResponse.json({ error: 'auth_config must be an object' }, { status: 400 })
+      }
+      const ac = auth_config as Record<string, unknown>
+      if (ac.type === 'form') {
+        if (typeof ac.email !== 'string' || !ac.email) {
+          return NextResponse.json({ error: 'auth_config.email is required for form auth' }, { status: 400 })
+        }
+        if (typeof ac.password !== 'string' || !ac.password) {
+          return NextResponse.json({ error: 'auth_config.password is required for form auth' }, { status: 400 })
+        }
+        validatedAuthConfig = ac
+      } else if (ac.type === 'cookie') {
+        if (!Array.isArray(ac.cookies) || ac.cookies.length === 0) {
+          return NextResponse.json({ error: 'auth_config.cookies must be a non-empty array' }, { status: 400 })
+        }
+        validatedAuthConfig = ac
+      } else {
+        return NextResponse.json({ error: 'auth_config.type must be "form" or "cookie"' }, { status: 400 })
+      }
+    }
+
     const { data: job, error: insertError } = await serviceClient
       .from('audit_jobs')
       .insert({
@@ -232,6 +260,7 @@ export async function POST(req: NextRequest) {
         ...(app_icon_url && typeof app_icon_url === 'string' ? { app_icon_url: app_icon_url.trim() } : {}),
         status: 'queued',
         ...(callbackUrl ? { callback_url: callbackUrl } : {}),
+        ...(validatedAuthConfig ? { auth_config: validatedAuthConfig } : {}),
       })
       .select()
       .single()
@@ -241,8 +270,18 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Failed to create audit job' }, { status: 500 })
     }
 
-    // Enqueue to BullMQ if Redis is available; otherwise polling worker picks it up
-    if (process.env.REDIS_URL) {
+    // ── Dispatch to executor ────────────────────────────────────────────────
+    // Priority: Trigger.dev (if TRIGGER_SECRET_KEY set) → BullMQ (if REDIS_URL set) → Supabase polling
+    if (process.env.TRIGGER_SECRET_KEY) {
+      setImmediate(async () => {
+        try {
+          const { tasks } = await import('@trigger.dev/sdk/v3')
+          await tasks.trigger('audit-pipeline', job)
+        } catch (err) {
+          console.error('[API] Trigger.dev dispatch failed (polling will pick up):', err)
+        }
+      })
+    } else if (process.env.REDIS_URL) {
       const redisUrl = process.env.REDIS_URL
       const jobId = job.id
       setImmediate(async () => {
@@ -260,6 +299,7 @@ export async function POST(req: NextRequest) {
         }
       })
     }
+    // else: Supabase polling worker picks it up on its next 5-second poll
 
     return NextResponse.json({ job_id: job.id, status: 'queued' }, { status: 201 })
   } catch (err) {
@@ -312,7 +352,7 @@ async function handleDockerPost(req: NextRequest) {
     return NextResponse.json({ error: 'Invalid JSON body' }, { status: 400 })
   }
 
-  const { url, description, flows, depth, callback_url, target_platform, is_public, app_icon_url } = body
+  const { url, description, flows, depth, callback_url, target_platform, is_public, app_icon_url, auth_config } = body
 
   if (!url || typeof url !== 'string') {
     return NextResponse.json({ error: 'url is required' }, { status: 400 })
@@ -356,6 +396,11 @@ async function handleDockerPost(req: NextRequest) {
   const validPlatforms = ['mobile', 'desktop', 'all']
   const auditPlatform = validPlatforms.includes(target_platform as string) ? (target_platform as 'mobile' | 'desktop' | 'all') : 'all'
 
+  // Minimal auth_config passthrough — Docker mode trusts local callers
+  const validatedAuthConfig = (auth_config && typeof auth_config === 'object')
+    ? auth_config as import('@/lib/supabase').AuthConfig
+    : undefined
+
   const job = dockerDb.createJob({
     user_id: 'docker-local',
     url: parsedUrl.href,
@@ -366,6 +411,7 @@ async function handleDockerPost(req: NextRequest) {
     is_public: is_public !== false,
     app_icon_url: app_icon_url && typeof app_icon_url === 'string' ? (app_icon_url as string).trim() : undefined,
     callback_url: callbackUrl,
+    auth_config: validatedAuthConfig,
   })
 
   return NextResponse.json({ job_id: job.id, status: 'queued' }, { status: 201 })

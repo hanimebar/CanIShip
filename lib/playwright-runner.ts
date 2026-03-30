@@ -13,6 +13,7 @@ export type PlaywrightOptions = {
   depth: 'quick' | 'standard' | 'deep'
   jobId: string
   deadline: number
+  authConfig?: import('./supabase').AuthConfig
 }
 
 export type NetworkRequest = {
@@ -44,6 +45,41 @@ export type PlaywrightScreenshot = {
   dataUrl?: string
 }
 
+export type HeadingIssue = {
+  issue: string
+  details: string
+}
+
+export type LinkTextIssue = {
+  text: string
+  href: string
+}
+
+export type PageStructureResult = {
+  h1Count: number
+  headingIssues: HeadingIssue[]
+  landmarkIssues: string[]
+  linkTextIssues: LinkTextIssue[]
+  hasSkipLink: boolean
+}
+
+export type ButtonInteractionResult = {
+  label: string
+  outcome: 'navigated' | 'dom-changed' | 'network-request' | 'error' | 'no-visible-change'
+  details: string
+  errorText?: string
+}
+
+export type PageAuditResult = {
+  url: string
+  title: string
+  loadTimeMs: number
+  structure: PageStructureResult
+  buttonInteractions: ButtonInteractionResult[]
+  consoleErrors: ConsoleMessage[]
+  screenshotLabel?: string
+}
+
 export type PlaywrightResults = {
   functionalIssues: Array<{
     title: string
@@ -62,6 +98,10 @@ export type PlaywrightResults = {
   loadTimeMs?: number
   detectedCsp?: string | null       // Raw CSP value if present
   hasStrictCsp: boolean             // True if app has CSP headers
+  homepageStructure?: PageStructureResult  // Structure analysis of the homepage
+  pageAudits: PageAuditResult[]           // Multi-page crawl results (standard/deep only)
+  authFailed?: boolean                    // True if auth was attempted but failed
+  authError?: string
   error?: string
 }
 
@@ -94,7 +134,7 @@ function newContext(browser: Browser, mobile = false): Promise<BrowserContext> {
 }
 
 export async function runPlaywrightAudit(options: PlaywrightOptions): Promise<PlaywrightResults> {
-  const { url, depth, jobId, deadline } = options
+  const { url, depth, jobId, deadline, authConfig } = options
 
   const results: PlaywrightResults = {
     functionalIssues: [],
@@ -107,6 +147,7 @@ export async function runPlaywrightAudit(options: PlaywrightOptions): Promise<Pl
     httpResponses: [],
     hasStrictCsp: false,
     detectedCsp: null,
+    pageAudits: [],
   }
 
   // ---- Probe security headers before launching browser ----
@@ -132,7 +173,7 @@ export async function runPlaywrightAudit(options: PlaywrightOptions): Promise<Pl
     })
 
     // ---- Homepage audit in its own isolated context ----
-    const homepageOk = await auditHomepage(browser, url, jobId, results, hasStrictCsp, deadline)
+    const homepageOk = await auditHomepage(browser, url, jobId, results, hasStrictCsp, deadline, authConfig)
 
     if (homepageOk) {
       // ---- Broken link check (uses fetch, independent of browser context) ----
@@ -140,7 +181,13 @@ export async function runPlaywrightAudit(options: PlaywrightOptions): Promise<Pl
 
       // ---- Mobile responsiveness check in a fresh isolated context ----
       if (depth !== 'quick') {
-        await auditMobile(browser, url, jobId, results)
+        await auditMobile(browser, url, jobId, results, authConfig)
+      }
+
+      // ---- Multi-page crawl: standard visits 5 pages, deep visits 12 ----
+      if (depth === 'standard' || depth === 'deep') {
+        const pageLimit = depth === 'deep' ? 12 : 5
+        await auditMultiPage(browser, url, jobId, results, hasStrictCsp, pageLimit, deadline, authConfig)
       }
     }
 
@@ -180,11 +227,28 @@ async function auditHomepage(
   results: PlaywrightResults,
   hasStrictCsp: boolean,
   deadline: number,
+  authConfig?: import('./supabase').AuthConfig,
 ): Promise<boolean> {
   let context: BrowserContext | null = null
   try {
     context = await newContext(browser)
     const page = await context.newPage()
+
+    // ---- Apply auth if provided ----
+    if (authConfig) {
+      // eslint-disable-next-line @typescript-eslint/no-require-imports
+      const { applyAuth } = require(/* webpackIgnore: true */ './auth-runner')
+      const authResult = await applyAuth(context, page, url, authConfig)
+      if (!authResult.success) {
+        results.authFailed = true
+        results.authError = authResult.error
+        results.functionalIssues.push({
+          title: 'Authentication failed',
+          description: authResult.error ?? 'Could not log in with provided credentials. Auth-protected pages were not audited.',
+          severity: 'high',
+        })
+      }
+    }
 
     // ---- Capture console messages ----
     page.on('console', (msg) => {
@@ -295,6 +359,11 @@ async function auditHomepage(
     // ---- Check interactive elements while page is still live ----
     await checkInteractiveElements(page, results)
 
+    // ---- Homepage structure analysis ----
+    try {
+      results.homepageStructure = await checkPageStructure(page)
+    } catch { /* non-fatal */ }
+
     // ---- Collect internal links for broken-link check (done separately via fetch) ----
     try {
       const baseHost = new URL(url).host
@@ -393,11 +462,18 @@ async function auditMobile(
   url: string,
   jobId: string,
   results: PlaywrightResults,
+  authConfig?: import('./supabase').AuthConfig,
 ) {
   let context: BrowserContext | null = null
   try {
     context = await newContext(browser, true)
     const page = await context.newPage()
+
+    if (authConfig) {
+      // eslint-disable-next-line @typescript-eslint/no-require-imports
+      const { applyAuth } = require(/* webpackIgnore: true */ './auth-runner')
+      await applyAuth(context, page, url, authConfig)
+    }
 
     await page.goto(url, { waitUntil: 'domcontentloaded', timeout: 20000 })
     await checkMobileLayout(page, results)
@@ -407,6 +483,301 @@ async function auditMobile(
   } catch { /* non-fatal */ } finally {
     if (context) {
       try { await context.close() } catch { /* ignore */ }
+    }
+  }
+}
+
+// ── Page structure analysis ────────────────────────────────────────────────
+
+/**
+ * Analyses the DOM structure of a loaded page for semantic correctness:
+ * heading hierarchy, landmark regions, vague link text, skip links.
+ * Runs entirely in-page via evaluate — no navigation.
+ */
+export async function checkPageStructure(page: Page): Promise<PageStructureResult> {
+  return page.evaluate((): PageStructureResult => {
+    const result: PageStructureResult = {
+      h1Count: 0,
+      headingIssues: [],
+      landmarkIssues: [],
+      linkTextIssues: [],
+      hasSkipLink: false,
+    }
+
+    // ── Heading hierarchy ───────────────────────────────────────────────────
+    const headings = Array.from(document.querySelectorAll('h1,h2,h3,h4,h5,h6'))
+    const levels = headings.map((h) => parseInt(h.tagName[1]))
+    result.h1Count = levels.filter((l) => l === 1).length
+
+    if (result.h1Count === 0) {
+      result.headingIssues.push({ issue: 'Missing H1', details: 'Page has no H1 heading — search engines and screen readers rely on this.' })
+    } else if (result.h1Count > 1) {
+      result.headingIssues.push({ issue: 'Multiple H1s', details: `Found ${result.h1Count} H1 headings. A page should have exactly one.` })
+    }
+
+    for (let i = 1; i < levels.length; i++) {
+      if (levels[i] > levels[i - 1] + 1) {
+        result.headingIssues.push({
+          issue: 'Heading level skip',
+          details: `Jumps from H${levels[i - 1]} to H${levels[i]} — intermediate levels must not be skipped.`,
+        })
+        break // report once per page
+      }
+    }
+
+    // ── Landmark regions ────────────────────────────────────────────────────
+    if (!document.querySelector('main, [role="main"]'))
+      result.landmarkIssues.push('Missing <main> landmark — screen readers cannot jump directly to main content.')
+    if (!document.querySelector('nav, [role="navigation"]'))
+      result.landmarkIssues.push('Missing <nav> landmark — navigation is not identified as a region.')
+    if (!document.querySelector('header, [role="banner"]'))
+      result.landmarkIssues.push('Missing <header> landmark.')
+    if (!document.querySelector('footer, [role="contentinfo"]'))
+      result.landmarkIssues.push('Missing <footer> landmark.')
+
+    // ── Skip link ───────────────────────────────────────────────────────────
+    const firstLinks = Array.from(document.querySelectorAll('a[href]')).slice(0, 3)
+    result.hasSkipLink = firstLinks.some((a) => {
+      const t = (a.textContent ?? '').toLowerCase()
+      return t.includes('skip') || t.includes('jump to')
+    })
+
+    // ── Vague link text ─────────────────────────────────────────────────────
+    const vagueExact = new Set(['click here', 'here', 'read more', 'learn more', 'more', 'this link', 'continue', 'details'])
+    const allLinks = Array.from(document.querySelectorAll('a[href]'))
+    const seen = new Set<string>()
+    for (const a of allLinks) {
+      const text = (a.textContent ?? '').trim().toLowerCase()
+      const ariaLabel = a.getAttribute('aria-label')
+      if (!ariaLabel && vagueExact.has(text) && !seen.has(text)) {
+        seen.add(text)
+        result.linkTextIssues.push({
+          text: a.textContent?.trim() ?? '',
+          href: (a as HTMLAnchorElement).href,
+        })
+      }
+    }
+
+    return result
+  })
+}
+
+// ── Button interaction testing ─────────────────────────────────────────────
+
+const PAGE_TIMEOUT_MS = 1500
+
+/**
+ * Clicks up to MAX_BUTTONS visible, non-submit, non-disabled buttons on the page.
+ * Records whether each click navigated, changed the DOM, triggered a network
+ * request, surfaced an error, or had no visible effect.
+ *
+ * The page is reloaded between buttons to avoid cumulative state. If a reload
+ * would exceed the deadline the loop exits early.
+ */
+export async function checkButtonInteractions(
+  page: Page,
+  jobId: string,
+  baseUrl: string,
+  deadline: number,
+): Promise<ButtonInteractionResult[]> {
+  const MAX_BUTTONS = 8
+  const interactions: ButtonInteractionResult[] = []
+
+  type BtnInfo = { text: string; ariaLabel: string; id: string; testId: string; type: string }
+
+  const getButtons = (): Promise<BtnInfo[]> =>
+    page.evaluate((max: number): BtnInfo[] => {
+      return Array.from(
+        document.querySelectorAll<HTMLButtonElement>(
+          'button:not([disabled]):not([type="submit"]):not([type="reset"])'
+        )
+      )
+        .filter((b) => {
+          const r = b.getBoundingClientRect()
+          return r.width > 0 && r.height > 0 && r.top >= 0 && r.top < window.innerHeight
+        })
+        .slice(0, max)
+        .map((b) => ({
+          text: (b.textContent ?? '').trim().slice(0, 60),
+          ariaLabel: b.getAttribute('aria-label') ?? '',
+          id: b.id,
+          testId: b.getAttribute('data-testid') ?? b.getAttribute('data-test') ?? '',
+          type: b.getAttribute('type') ?? 'button',
+        }))
+    }, MAX_BUTTONS)
+
+  let buttons: BtnInfo[]
+  try {
+    buttons = await getButtons()
+  } catch {
+    return interactions
+  }
+
+  for (const btn of buttons) {
+    if (Date.now() > deadline - 30000) break
+
+    const selector =
+      btn.id              ? `#${CSS.escape(btn.id)}` :
+      btn.testId          ? `[data-testid="${btn.testId}"]` :
+      btn.ariaLabel       ? `button[aria-label="${btn.ariaLabel}"]` :
+      btn.text            ? `button:has-text("${btn.text.slice(0, 30).replace(/"/g, '')}")` :
+      null
+
+    if (!selector) continue
+
+    const label = btn.text || btn.ariaLabel || '(unlabelled button)'
+
+    const networkUrls: string[] = []
+    const reqListener = (req: { url(): string }) => networkUrls.push(req.url())
+    page.on('request', reqListener)
+
+    try {
+      const domBefore = await page.evaluate(() => document.body.innerHTML.length).catch(() => 0)
+      const urlBefore = page.url()
+
+      await page.click(selector, { timeout: 4000 })
+      await page.waitForTimeout(PAGE_TIMEOUT_MS)
+
+      const urlAfter = page.url()
+      const domAfter = await page.evaluate(() => document.body.innerHTML.length).catch(() => 0)
+
+      if (urlAfter !== urlBefore && !urlAfter.startsWith(urlBefore + '#')) {
+        interactions.push({ label, outcome: 'navigated', details: `Navigated to ${urlAfter}` })
+        // Navigate back so subsequent buttons can be tested
+        try { await page.goto(urlBefore, { waitUntil: 'domcontentloaded', timeout: 10000 }) } catch { /* ignore */ }
+      } else if (Math.abs(domAfter - domBefore) > 80) {
+        // Check if an error/modal appeared
+        const errorText = await page.evaluate(() => {
+          const body = document.body.innerText.toLowerCase()
+          const errWords = ['error', 'invalid', 'failed', 'forbidden', 'unauthorized']
+          return errWords.find((w) => body.includes(w)) ?? null
+        }).catch(() => null)
+
+        if (errorText) {
+          interactions.push({ label, outcome: 'error', details: `DOM changed and error keyword "${errorText}" appeared after click.` })
+        } else {
+          interactions.push({ label, outcome: 'dom-changed', details: `DOM changed by ~${Math.abs(domAfter - domBefore)} chars — likely opened modal, dropdown, or panel.` })
+        }
+        // Try to dismiss any modal/overlay before next button
+        await page.keyboard.press('Escape').catch(() => { /* ignore */ })
+        await page.waitForTimeout(300)
+      } else if (networkUrls.length > 0) {
+        interactions.push({ label, outcome: 'network-request', details: `Triggered ${networkUrls.length} network request(s).` })
+      } else {
+        interactions.push({ label, outcome: 'no-visible-change', details: 'No navigation, DOM change, or network request detected after click.' })
+      }
+    } catch (err) {
+      interactions.push({
+        label,
+        outcome: 'error',
+        errorText: err instanceof Error ? err.message : String(err),
+        details: `Could not click button: ${err instanceof Error ? err.message.slice(0, 120) : String(err)}`,
+      })
+    } finally {
+      page.off('request', reqListener)
+    }
+  }
+
+  void jobId // used by caller for screenshots — kept for future use
+  void baseUrl
+  return interactions
+}
+
+// ── Multi-page crawl ───────────────────────────────────────────────────────
+
+/**
+ * Opens each discovered internal URL in a fresh isolated context, runs
+ * structure analysis and button interaction checks, takes a screenshot,
+ * and stores the result in results.pageAudits.
+ *
+ * Page budget: standard=5, deep=12. Per-page timeout: 20 s.
+ * Exits early if the deadline is within 45 s.
+ */
+async function auditMultiPage(
+  browser: Browser,
+  baseUrl: string,
+  jobId: string,
+  results: PlaywrightResults,
+  hasStrictCsp: boolean,
+  pageLimit: number,
+  deadline: number,
+  authConfig?: import('./supabase').AuthConfig,
+): Promise<void> {
+  // pagesVisited[0] = homepage (already audited). Remaining = discovered internal links.
+  const candidates = results.pagesVisited
+    .slice(1)
+    .filter((u) => {
+      try { return new URL(u).host === new URL(baseUrl).host } catch { return false }
+    })
+    .filter((u, i, arr) => arr.indexOf(u) === i) // deduplicate
+    .slice(0, pageLimit)
+
+  for (const pageUrl of candidates) {
+    if (Date.now() > deadline - 45000) break
+
+    let context: BrowserContext | null = null
+    try {
+      context = await newContext(browser)
+      const page = await context.newPage()
+
+      // Apply auth so protected pages render correctly
+      if (authConfig) {
+        // eslint-disable-next-line @typescript-eslint/no-require-imports
+        const { applyAuth } = require(/* webpackIgnore: true */ './auth-runner')
+        await applyAuth(context, page, baseUrl, authConfig)
+      }
+
+      const pageConsoleErrors: ConsoleMessage[] = []
+      page.on('console', (msg) => {
+        if (msg.type() === 'error') {
+          const text = msg.text()
+          if (!text.includes('Content Security Policy') && !text.includes('chrome-extension://')) {
+            pageConsoleErrors.push({ type: 'error', text: text.slice(0, 300) })
+          }
+        }
+      })
+
+      const startTime = Date.now()
+      const response = await page.goto(pageUrl, {
+        waitUntil: hasStrictCsp ? 'domcontentloaded' : 'networkidle',
+        timeout: Math.min(20000, deadline - Date.now()),
+      })
+      const loadTimeMs = Date.now() - startTime
+
+      if (!response || response.status() >= 400) {
+        // Already captured by broken link check — skip structure audit
+        await context.close()
+        context = null
+        continue
+      }
+
+      const title = await page.title()
+
+      const [structure, buttonInteractions] = await Promise.all([
+        checkPageStructure(page).catch((): PageStructureResult => ({
+          h1Count: 0, headingIssues: [], landmarkIssues: [], linkTextIssues: [], hasSkipLink: false,
+        })),
+        checkButtonInteractions(page, jobId, baseUrl, deadline).catch(() => []),
+      ])
+
+      const shot = await takeScreenshot(page, jobId, `page-${results.pageAudits.length + 1}`)
+
+      results.pageAudits.push({
+        url: pageUrl,
+        title,
+        loadTimeMs,
+        structure,
+        buttonInteractions,
+        consoleErrors: pageConsoleErrors,
+        screenshotLabel: shot?.step_label,
+      })
+
+      if (shot) results.screenshots.push(shot)
+
+    } catch { /* non-fatal — one page failure must not abort the rest */ } finally {
+      if (context) {
+        try { await context.close() } catch { /* ignore */ }
+      }
     }
   }
 }

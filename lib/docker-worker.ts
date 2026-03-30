@@ -95,13 +95,21 @@ async function runDockerAuditPipeline(jobId: string) {
   const { analyzeWithClaude } = require(/* webpackIgnore: true */ `${runnerDir}/claude-analyzer`)
   // eslint-disable-next-line @typescript-eslint/no-require-imports
   const { generateReport } = require(/* webpackIgnore: true */ `${runnerDir}/report-generator`)
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
+  const { executeFlows } = require(/* webpackIgnore: true */ `${runnerDir}/flow-executor`)
 
   const timeoutMs = { quick: 5 * 60 * 1000, standard: 15 * 60 * 1000, deep: 30 * 60 * 1000 }[job.depth] || 5 * 60 * 1000
   const deadline = Date.now() + timeoutMs
 
+  // Clear auth_config from DB before use — credentials are in-memory only from here
+  if (job.auth_config) {
+    dockerDb.updateJob(job.id, { auth_config: undefined })
+  }
+
   const playwrightResults = await runPlaywrightAudit({
     url: job.url, description: job.description, flows: job.flows,
     depth: job.depth, jobId: job.id, deadline,
+    authConfig: job.auth_config,
   })
 
   const [axeResults, lighthouseResults, securityResults] = await Promise.all([
@@ -115,17 +123,25 @@ async function runDockerAuditPipeline(jobId: string) {
     runMobileAudit({ url: job.url, deadline }),
   ])
 
+  const flowResults = (job.depth !== 'quick' && job.flows.length > 0)
+    ? await executeFlows(job.url, job.flows, job.id, job.auth_config, deadline)
+    : []
+
   const claudeReport = await analyzeWithClaude({
     url: job.url, description: job.description, flows: job.flows,
     target_platform: job.target_platform ?? 'all',
     playwrightResults, axeResults, lighthouseResults, securityResults,
     seoResults, mobileResults, screenshots: playwrightResults.screenshots || [],
     tier,
+    flowResults,
   })
 
   const finalReport = generateReport(claudeReport, {
     playwrightResults, axeResults, lighthouseResults, securityResults,
   })
+
+  finalReport.flow_results = flowResults.length > 0 ? flowResults : undefined
+  finalReport.pages_audited = playwrightResults.pageAudits.length + 1
 
   dockerDb.createReport({
     job_id: job.id,

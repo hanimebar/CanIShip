@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 
 type Depth = 'quick' | 'standard' | 'deep'
 type TargetPlatform = 'mobile' | 'desktop' | 'all'
+type AuthMode = 'form' | 'cookie'
 
 const platformOptions: Array<{
   value: TargetPlatform
@@ -85,6 +86,15 @@ export function AuditForm({ userPlan = 'free', defaultUrl = '', defaultDescripti
   const [error, setError] = useState('')
   const [isSubmitting, setIsSubmitting] = useState(false)
 
+  // Auth
+  const [showAuth, setShowAuth] = useState(false)
+  const [authMode, setAuthMode] = useState<AuthMode>('form')
+  const [authEmail, setAuthEmail] = useState('')
+  const [authPassword, setAuthPassword] = useState('')
+  const [authLoginUrl, setAuthLoginUrl] = useState('')
+  const [authCookieJson, setAuthCookieJson] = useState('')
+  const [authCookieError, setAuthCookieError] = useState('')
+
   const canSelectDepth = (d: Depth) => {
     const option = depthOptions.find((o) => o.value === d)
     return option?.plan.includes(userPlan) ?? false
@@ -117,12 +127,36 @@ export function AuditForm({ userPlan = 'free', defaultUrl = '', defaultDescripti
     }
 
     setIsSubmitting(true)
+    setAuthCookieError('')
 
     try {
       const flowList = flows
         .split('\n')
         .map((f) => f.trim())
         .filter((f) => f.length > 0)
+
+      // Build auth_config if the user filled in credentials
+      let auth_config: Record<string, unknown> | undefined
+      if (showAuth) {
+        if (authMode === 'form' && authEmail.trim() && authPassword.trim()) {
+          auth_config = {
+            type: 'form',
+            email: authEmail.trim(),
+            password: authPassword,
+            ...(authLoginUrl.trim() ? { login_url: authLoginUrl.trim() } : {}),
+          }
+        } else if (authMode === 'cookie' && authCookieJson.trim()) {
+          try {
+            const cookies = JSON.parse(authCookieJson.trim())
+            if (!Array.isArray(cookies)) throw new Error('Must be a JSON array')
+            auth_config = { type: 'cookie', cookies }
+          } catch (e) {
+            setAuthCookieError(`Invalid JSON: ${e instanceof Error ? e.message : String(e)}`)
+            setIsSubmitting(false)
+            return
+          }
+        }
+      }
 
       const res = await fetch('/api/audit', {
         method: 'POST',
@@ -135,6 +169,7 @@ export function AuditForm({ userPlan = 'free', defaultUrl = '', defaultDescripti
           target_platform: platform,
           is_public: isPublic,
           ...(appIconUrl.trim() ? { app_icon_url: appIconUrl.trim() } : {}),
+          ...(auth_config ? { auth_config } : {}),
         }),
       })
 
@@ -246,16 +281,146 @@ export function AuditForm({ userPlan = 'free', defaultUrl = '', defaultDescripti
           <span className="text-gray-600 font-normal">(optional)</span>
         </label>
         <p className="text-xs text-gray-500 mb-2">
-          One per line. E.g: &quot;Make sure checkout works&quot; or &quot;Test the password reset flow&quot;
+          One per line. These are <strong className="text-gray-400">actually executed</strong> by the scanner on Standard/Deep scans — be specific.
         </p>
         <textarea
           value={flows}
           onChange={(e) => setFlows(e.target.value)}
-          placeholder={'Make sure checkout works\nTest the password reset flow\nVerify the dashboard loads after login'}
+          placeholder={'Click the Settings link in the nav, then verify the Notifications toggle is visible\nFill in the contact form and submit — check for a success message\nClick Sign Up, fill in a test email, verify the confirmation step appears'}
           rows={3}
           className="w-full px-4 py-3 bg-dark-700 border border-dark-400 rounded-lg text-white placeholder-gray-600 focus:outline-none focus:border-neon-green/50 focus:ring-1 focus:ring-neon-green/50 text-sm resize-none transition-colors font-mono"
           disabled={isSubmitting}
         />
+      </div>
+
+      {/* Authentication (optional, collapsible) */}
+      <div className="rounded-xl border border-dark-500 overflow-hidden">
+        <button
+          type="button"
+          onClick={() => setShowAuth((v) => !v)}
+          className="w-full flex items-center justify-between px-4 py-3 bg-dark-700 hover:bg-dark-600 transition-colors text-left"
+          disabled={isSubmitting}
+        >
+          <div className="flex items-center gap-2">
+            <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
+                d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+            </svg>
+            <span className="text-sm font-semibold text-gray-300">
+              Authentication
+              <span className="ml-2 text-gray-600 font-normal">
+                {showAuth && authMode === 'form' && authEmail ? `(${authEmail})` : '(optional)'}
+              </span>
+            </span>
+          </div>
+          <svg
+            className={`w-4 h-4 text-gray-500 transition-transform ${showAuth ? 'rotate-180' : ''}`}
+            fill="none" stroke="currentColor" viewBox="0 0 24 24"
+          >
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+          </svg>
+        </button>
+
+        {showAuth && (
+          <div className="px-4 py-4 bg-dark-800 space-y-4 border-t border-dark-600">
+            {/* Warning */}
+            <div className="flex items-start gap-2 rounded-lg bg-orange-500/10 border border-orange-500/25 px-3 py-2">
+              <svg className="w-4 h-4 text-orange-400 mt-0.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
+                  d="M12 9v4m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z" />
+              </svg>
+              <p className="text-xs text-orange-300">
+                Use <strong>test or staging credentials only</strong>. Never enter production passwords.
+                Credentials are deleted from our servers the moment the audit worker starts.
+              </p>
+            </div>
+
+            {/* Mode toggle */}
+            <div className="flex gap-2">
+              {(['form', 'cookie'] as AuthMode[]).map((m) => (
+                <button
+                  key={m}
+                  type="button"
+                  onClick={() => setAuthMode(m)}
+                  className={`px-3 py-1.5 rounded text-xs font-semibold transition-colors ${
+                    authMode === m
+                      ? 'bg-neon-green/20 text-neon-green border border-neon-green/40'
+                      : 'bg-dark-700 text-gray-400 border border-dark-400 hover:border-dark-300'
+                  }`}
+                  disabled={isSubmitting}
+                >
+                  {m === 'form' ? 'Email / Password' : 'Session Cookies'}
+                </button>
+              ))}
+            </div>
+
+            {authMode === 'form' && (
+              <div className="space-y-3">
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-xs text-gray-500 mb-1">Email / Username</label>
+                    <input
+                      type="text"
+                      autoComplete="off"
+                      value={authEmail}
+                      onChange={(e) => setAuthEmail(e.target.value)}
+                      placeholder="test@example.com"
+                      className="w-full px-3 py-2 bg-dark-700 border border-dark-400 rounded text-white placeholder-gray-600 text-sm focus:outline-none focus:border-neon-green/50"
+                      disabled={isSubmitting}
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs text-gray-500 mb-1">Password</label>
+                    <input
+                      type="password"
+                      autoComplete="new-password"
+                      value={authPassword}
+                      onChange={(e) => setAuthPassword(e.target.value)}
+                      placeholder="••••••••"
+                      className="w-full px-3 py-2 bg-dark-700 border border-dark-400 rounded text-white placeholder-gray-600 text-sm focus:outline-none focus:border-neon-green/50"
+                      disabled={isSubmitting}
+                    />
+                  </div>
+                </div>
+                <div>
+                  <label className="block text-xs text-gray-500 mb-1">
+                    Login URL <span className="text-gray-600">(optional — defaults to /login)</span>
+                  </label>
+                  <input
+                    type="text"
+                    value={authLoginUrl}
+                    onChange={(e) => setAuthLoginUrl(e.target.value)}
+                    placeholder="/login or https://app.example.com/signin"
+                    className="w-full px-3 py-2 bg-dark-700 border border-dark-400 rounded text-white placeholder-gray-600 text-sm font-mono focus:outline-none focus:border-neon-green/50"
+                    disabled={isSubmitting}
+                  />
+                </div>
+              </div>
+            )}
+
+            {authMode === 'cookie' && (
+              <div>
+                <label className="block text-xs text-gray-500 mb-1">
+                  Session cookies <span className="text-gray-600">(JSON array)</span>
+                </label>
+                <textarea
+                  value={authCookieJson}
+                  onChange={(e) => { setAuthCookieJson(e.target.value); setAuthCookieError('') }}
+                  placeholder={'[{"name":"session","value":"abc123","domain":"app.example.com"}]'}
+                  rows={4}
+                  className="w-full px-3 py-2 bg-dark-700 border border-dark-400 rounded text-white placeholder-gray-600 text-xs font-mono resize-none focus:outline-none focus:border-neon-green/50"
+                  disabled={isSubmitting}
+                />
+                {authCookieError && (
+                  <p className="text-xs text-red-400 mt-1">{authCookieError}</p>
+                )}
+                <p className="text-xs text-gray-600 mt-1">
+                  Copy from browser DevTools → Application → Cookies
+                </p>
+              </div>
+            )}
+          </div>
+        )}
       </div>
 
       {/* Depth selector */}

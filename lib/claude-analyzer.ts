@@ -16,7 +16,7 @@ import type { LighthouseResults } from './lighthouse-runner'
 import type { SecurityResults } from './security-checker'
 import type { SeoResults } from './seo-checker'
 import type { MobileResults } from './mobile-runner'
-import type { ClaudeReport, ReportTier } from './supabase'
+import type { ClaudeReport, FlowExecutionResult, ReportTier } from './supabase'
 
 const MODEL = 'claude-sonnet-4-20250514'
 
@@ -33,6 +33,7 @@ export type ClaudeAnalyzerInput = {
   seoResults: SeoResults
   mobileResults: MobileResults
   screenshots: Array<{ filename: string; storage_path: string; step_label: string }>
+  flowResults?: FlowExecutionResult[]   // actual execution results from flow-executor
 }
 
 // ─── Token budgets per tier ────────────────────────────────────────────────
@@ -129,6 +130,7 @@ export async function analyzeWithClaude(input: ClaudeAnalyzerInput): Promise<Cla
 
   const userPrompt = buildUserPrompt(input)
 
+
   try {
     const response = await client.messages.create({
       model:      MODEL,
@@ -174,7 +176,8 @@ This app must work across all device sizes. Apply standard weighting to all dime
 function buildUserPrompt(input: ClaudeAnalyzerInput): string {
   const { url, description, flows, tier, target_platform = 'all',
           playwrightResults, axeResults,
-          lighthouseResults, securityResults, seoResults, mobileResults } = input
+          lighthouseResults, securityResults, seoResults, mobileResults,
+          flowResults } = input
 
   const sections: string[] = []
 
@@ -299,6 +302,75 @@ ${mobileResults.issues.map(i =>
   `- [${i.severity.toUpperCase()}] ${i.title}: ${i.description}\n  Fix: ${i.remediation}`
 ).join('\n') || 'None'}
 ${mobileResults.error ? `Runner error: ${mobileResults.error}` : ''}`)
+
+  // ── Homepage structure analysis ─────────────────────────────────────────
+  const hs = playwrightResults.homepageStructure
+  if (hs) {
+    const structureLines: string[] = []
+    if (hs.headingIssues.length > 0) {
+      structureLines.push(`Heading issues: ${hs.headingIssues.map((h) => `${h.issue} — ${h.details}`).join('; ')}`)
+    } else {
+      structureLines.push(`Heading hierarchy: OK (H1 count: ${hs.h1Count})`)
+    }
+    if (hs.landmarkIssues.length > 0) {
+      structureLines.push(`Landmark issues:\n${hs.landmarkIssues.map((l) => `- ${l}`).join('\n')}`)
+    } else {
+      structureLines.push('Landmark regions: All present (main, nav, header, footer)')
+    }
+    if (hs.linkTextIssues.length > 0) {
+      structureLines.push(`Vague link text (${hs.linkTextIssues.length}): ${hs.linkTextIssues.map((l) => `"${l.text}"`).join(', ')}`)
+    }
+    structureLines.push(`Skip link: ${hs.hasSkipLink ? 'Present' : 'MISSING'}`)
+
+    sections.push(`## Homepage Structure Analysis\n${structureLines.join('\n')}`)
+  }
+
+  // ── Multi-page crawl results ─────────────────────────────────────────────
+  if (playwrightResults.pageAudits.length > 0) {
+    const pageLines = playwrightResults.pageAudits.map((p) => {
+      const structIssues = [
+        ...p.structure.headingIssues.map((h) => h.issue),
+        ...p.structure.landmarkIssues.map((l) => l.split(' ')[1] ?? l), // e.g. "Missing <main>"
+      ]
+      const btnSummary = p.buttonInteractions.length > 0
+        ? p.buttonInteractions.map((b) => `  - "${b.label}": ${b.outcome}${b.errorText ? ` (${b.errorText.slice(0, 80)})` : ''}`).join('\n')
+        : '  None tested'
+      const consoleErrs = p.consoleErrors.length > 0
+        ? `  Console errors: ${p.consoleErrors.slice(0, 3).map((e) => e.text.slice(0, 100)).join(' | ')}`
+        : ''
+
+      return [
+        `### ${p.url} (${p.title}) — loaded in ${p.loadTimeMs}ms`,
+        structIssues.length > 0 ? `  Structure issues: ${structIssues.join(', ')}` : '  Structure: OK',
+        `  Button interactions:\n${btnSummary}`,
+        consoleErrs,
+      ].filter(Boolean).join('\n')
+    })
+
+    sections.push(`## Multi-Page Crawl Results (${playwrightResults.pageAudits.length} pages)\n${pageLines.join('\n\n')}`)
+  }
+
+  // ── Auth status ──────────────────────────────────────────────────────────
+  if (playwrightResults.authFailed) {
+    sections.push(`## Authentication\nAUTH FAILED — ${playwrightResults.authError ?? 'unknown error'}\nPages behind the login wall were NOT audited. This is a finding in itself — incorrect credentials or missing auth setup.`)
+  }
+
+  // ── Flow execution results ───────────────────────────────────────────────
+  if (flowResults && flowResults.length > 0) {
+    const flowLines = flowResults.map((f) => {
+      const stepLines = f.steps.map((s) =>
+        `  [${s.status.toUpperCase()}] ${s.description}${s.status !== 'passed' ? ` — ${s.details}` : ''}`
+      )
+      return [`### Flow: "${f.flow_text}" — ${f.overall_status.toUpperCase()}`,
+        ...stepLines,
+        f.error ? `  Error: ${f.error}` : '',
+      ].filter(Boolean).join('\n')
+    })
+
+    sections.push(`## Executed Flow Results\nThese flows were ACTUALLY EXECUTED by Playwright. Treat failures as confirmed bugs, not hypothetical issues.\n\n${flowLines.join('\n\n')}`)
+  } else if (flows.length > 0) {
+    sections.push(`## Flows (not executed — quick scan)\nThe following flows were described by the user but NOT executed (requires standard/deep scan):\n${flows.map((f) => `- ${f}`).join('\n')}`)
+  }
 
   // Output schema — varies by tier
   sections.push(`---\n\n${buildOutputSchema(tier)}`)

@@ -86,7 +86,14 @@ export function generateReport(claudeReport: ClaudeReport, raw: RawResults): Cla
   report.overall_score = Math.round(Math.min(100, Math.max(0, report.overall_score)) * 100) / 100
 
   // ---- Ensure ship_verdict aligns with score ----
+  const criticalSecurityFlags = report.security_flags.filter(
+    (f) => f.severity === 'critical' || f.severity === 'high'
+  )
+
   if (report.critical_bugs.length > 0 && report.ship_verdict === 'yes') {
+    report.ship_verdict = 'conditional'
+  }
+  if (criticalSecurityFlags.length > 0 && report.ship_verdict === 'yes') {
     report.ship_verdict = 'conditional'
   }
   if (report.overall_score < 40 && report.ship_verdict !== 'no') {

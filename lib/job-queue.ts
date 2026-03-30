@@ -137,6 +137,16 @@ async function runAuditPipeline(job: AuditJob) {
   const deadline = Date.now() + timeoutMs
   let screenshots: Array<{ filename: string; storage_path: string; step_label: string }> = []
 
+  // ── Clear auth_config from DB before it is ever used ─────────────────────
+  // Credentials are needed only in-memory during this run. Remove from DB
+  // now so they are never accessible after this point.
+  if (job.auth_config) {
+    await supabase
+      .from('audit_jobs')
+      .update({ auth_config: null })
+      .eq('id', job.id)
+  }
+
   const playwrightResults = await runPlaywrightAudit({
     url: job.url,
     description: job.description,
@@ -144,6 +154,7 @@ async function runAuditPipeline(job: AuditJob) {
     depth: job.depth,
     jobId: job.id,
     deadline,
+    authConfig: job.auth_config,
   })
 
   screenshots = screenshots.concat(playwrightResults.screenshots || [])
@@ -163,6 +174,25 @@ async function runAuditPipeline(job: AuditJob) {
     runSeoChecks({ url: job.url }),
     runMobileAudit({ url: job.url, deadline }),
   ])
+
+  // ── Execute user-defined flows (standard/deep only) ───────────────────────
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
+  const { executeFlows } = require(/* webpackIgnore: true */ `${runnerDir}/flow-executor`)
+  const flowResults = (job.depth !== 'quick' && job.flows.length > 0)
+    ? await executeFlows(job.url, job.flows, job.id, job.auth_config, deadline)
+    : []
+
+  // Collect flow screenshots into the screenshots list
+  for (const fr of flowResults) {
+    for (const step of fr.steps) {
+      for (const storagePath of [step.screenshot_before, step.screenshot_after]) {
+        if (storagePath) {
+          const filename = storagePath.split('/').pop() ?? storagePath
+          screenshots.push({ filename, storage_path: storagePath, step_label: step.description })
+        }
+      }
+    }
+  }
 
   if (screenshots.length > 0) {
     await supabase.from('screenshots').insert(
@@ -188,6 +218,7 @@ async function runAuditPipeline(job: AuditJob) {
     mobileResults,
     screenshots,
     tier,
+    flowResults,
   })
 
   const finalReport = generateReport(claudeReport, {
@@ -196,6 +227,10 @@ async function runAuditPipeline(job: AuditJob) {
     lighthouseResults,
     securityResults,
   })
+
+  // Attach flow results and page count to the stored report
+  finalReport.flow_results = flowResults.length > 0 ? flowResults : undefined
+  finalReport.pages_audited = playwrightResults.pageAudits.length + 1 // +1 for homepage
 
   await supabase.from('audit_reports').insert({
     job_id: job.id,
