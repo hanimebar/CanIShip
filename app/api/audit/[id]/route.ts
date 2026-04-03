@@ -108,6 +108,7 @@ export async function GET(
     return NextResponse.json({
       status: job.status,
       job_id: job.id,
+      current_step: job.current_step,
       error_message: job.error_message,
       started_at: job.started_at,
       created_at: job.created_at,

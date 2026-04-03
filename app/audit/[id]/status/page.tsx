@@ -7,6 +7,7 @@ import Link from 'next/link'
 type JobStatus = {
   status: 'queued' | 'running' | 'complete' | 'failed'
   job_id: string
+  current_step?: 'playwright' | 'axe' | 'lighthouse' | 'security' | 'claude'
   report_id?: string
   ship_score?: number
   ship_verdict?: string
@@ -14,6 +15,19 @@ type JobStatus = {
   started_at?: string
   created_at?: string
   completed_at?: string
+}
+
+const AUDIT_STEPS = ['playwright', 'axe', 'lighthouse', 'security', 'claude'] as const
+type AuditStep = typeof AUDIT_STEPS[number]
+
+function stepState(step: AuditStep, currentStep: AuditStep | undefined, jobComplete: boolean): 'done' | 'running' | 'pending' {
+  if (jobComplete) return 'done'
+  if (!currentStep) return 'pending'
+  const current = AUDIT_STEPS.indexOf(currentStep)
+  const idx = AUDIT_STEPS.indexOf(step)
+  if (idx < current) return 'done'
+  if (idx === current) return 'running'
+  return 'pending'
 }
 
 const statusMessages = {
@@ -296,28 +310,39 @@ export default function AuditStatusPage() {
 
             {/* Progress steps */}
             <div className="text-left border border-dark-500 bg-dark-800 rounded-xl p-5 space-y-3 mb-6">
-              {[
-                { label: 'Playwright: functional + link testing', done: status !== 'queued' },
-                { label: 'axe-core: accessibility audit', done: status !== 'queued' },
-                { label: 'Lighthouse: performance', done: status !== 'queued' },
-                { label: 'Security surface scan', done: status !== 'queued' },
-                { label: 'Claude AI: analysis + report generation', done: false },
-              ].map(({ label, done }, i) => (
-                <div key={i} className="flex items-center gap-3 text-xs">
-                  <div className={`w-4 h-4 rounded-full flex items-center justify-center flex-shrink-0 ${
-                    done ? 'bg-neon-green/20 border border-neon-green/50' : 'bg-dark-600 border border-dark-500'
-                  }`}>
-                    {done ? (
-                      <svg className="w-2.5 h-2.5 text-neon-green" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
-                      </svg>
-                    ) : (
-                      <div className="w-1.5 h-1.5 rounded-full bg-dark-400" />
-                    )}
+              {([
+                { step: 'playwright' as AuditStep, label: 'Playwright: functional + link testing' },
+                { step: 'axe'        as AuditStep, label: 'axe-core: accessibility audit' },
+                { step: 'lighthouse' as AuditStep, label: 'Lighthouse: performance' },
+                { step: 'security'   as AuditStep, label: 'Security surface scan' },
+                { step: 'claude'     as AuditStep, label: 'Claude AI: analysis + report generation' },
+              ]).map(({ step, label }) => {
+                const state = stepState(step, jobStatus?.current_step, jobStatus?.status === 'complete')
+                return (
+                  <div key={step} className="flex items-center gap-3 text-xs">
+                    <div className={`w-4 h-4 rounded-full flex items-center justify-center flex-shrink-0 ${
+                      state === 'done'    ? 'bg-neon-green/20 border border-neon-green/50' :
+                      state === 'running' ? 'bg-amber-500/20 border border-amber-500/50' :
+                                           'bg-dark-600 border border-dark-500'
+                    }`}>
+                      {state === 'done' ? (
+                        <svg className="w-2.5 h-2.5 text-neon-green" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+                        </svg>
+                      ) : state === 'running' ? (
+                        <div className="w-1.5 h-1.5 rounded-full bg-amber-400" style={{ animation: 'pulse 1s ease-in-out infinite' }} />
+                      ) : (
+                        <div className="w-1.5 h-1.5 rounded-full bg-dark-400" />
+                      )}
+                    </div>
+                    <span className={
+                      state === 'done'    ? 'text-gray-300' :
+                      state === 'running' ? 'text-amber-400' :
+                                           'text-gray-600'
+                    }>{label}</span>
                   </div>
-                  <span className={done ? 'text-gray-300' : 'text-gray-600'}>{label}</span>
-                </div>
-              ))}
+                )
+              })}
             </div>
 
             <p className="text-xs text-gray-600">

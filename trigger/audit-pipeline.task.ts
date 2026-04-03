@@ -72,8 +72,12 @@ export const auditPipelineTask = task({
     const { executeFlows }        = require(`${runnerDir}/flow-executor`)
     /* eslint-enable @typescript-eslint/no-require-imports */
 
+    const setStep = (step: string) =>
+      supabase.from('audit_jobs').update({ current_step: step }).eq('id', job.id)
+
     // ── Phase 1: Playwright homepage audit ───────────────────────────────────
     logger.info('running Playwright homepage audit')
+    await setStep('playwright')
     const playwrightResults = await runPlaywrightAudit({
       url: job.url,
       description: job.description,
@@ -84,11 +88,16 @@ export const auditPipelineTask = task({
       authConfig: job.auth_config,
     })
 
-    // ── Phase 2: axe, Lighthouse, security — run in parallel ────────────────
-    logger.info('running parallel checks (axe, Lighthouse, security, SEO, mobile)')
-    const [axeResults, lighthouseResults, securityResults, seoResults, mobileResults] = await Promise.all([
-      runAxeAudit({ url: job.url, jobId: job.id, deadline }),
-      runLighthouseAudit({ url: job.url, deadline }),
+    // ── Phase 2: axe, Lighthouse, security — run sequentially for step tracking ─
+    logger.info('running checks (axe, Lighthouse, security, SEO, mobile)')
+    await setStep('axe')
+    const axeResults = await runAxeAudit({ url: job.url, jobId: job.id, deadline })
+
+    await setStep('lighthouse')
+    const lighthouseResults = await runLighthouseAudit({ url: job.url, deadline })
+
+    await setStep('security')
+    const [securityResults, seoResults, mobileResults] = await Promise.all([
       runSecurityChecks({ url: job.url }),
       runSeoChecks({ url: job.url }),
       runMobileAudit({ url: job.url, deadline }),
@@ -141,6 +150,7 @@ export const auditPipelineTask = task({
 
     // ── Phase 5: Claude analysis ─────────────────────────────────────────────
     logger.info('running Claude analysis')
+    await setStep('claude')
     const claudeReport = await analyzeWithClaude({
       url: job.url,
       description: job.description,

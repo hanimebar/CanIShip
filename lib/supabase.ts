@@ -72,6 +72,7 @@ export type AuditJob = {
   app_icon_url?: string    // Optional URL to app logo/icon shown on the leaderboard
   callback_url?: string    // Optional webhook URL — fired on completion or failure
   auth_config?: AuthConfig // Optional — test credentials for auth-gated pages
+  current_step?: 'playwright' | 'axe' | 'lighthouse' | 'security' | 'claude'
   error_message?: string
   worker_id?: string
   started_at?: string

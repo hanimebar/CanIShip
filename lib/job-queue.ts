@@ -147,6 +147,10 @@ async function runAuditPipeline(job: AuditJob) {
       .eq('id', job.id)
   }
 
+  const setStep = (step: string) =>
+    supabase.from('audit_jobs').update({ current_step: step }).eq('id', job.id)
+
+  await setStep('playwright')
   const playwrightResults = await runPlaywrightAudit({
     url: job.url,
     description: job.description,
@@ -159,14 +163,17 @@ async function runAuditPipeline(job: AuditJob) {
 
   screenshots = screenshots.concat(playwrightResults.screenshots || [])
 
+  await setStep('axe')
   const axeResults = await runAxeAudit({
     url: job.url,
     jobId: job.id,
     deadline,
   })
 
+  await setStep('lighthouse')
   const lighthouseResults = await runLighthouseAudit({ url: job.url, deadline })
 
+  await setStep('security')
   const securityResults = await runSecurityChecks({ url: job.url })
 
   // SEO and mobile run in parallel — both are fast and independent
@@ -205,6 +212,7 @@ async function runAuditPipeline(job: AuditJob) {
     )
   }
 
+  await setStep('claude')
   const claudeReport = await analyzeWithClaude({
     url: job.url,
     description: job.description,
