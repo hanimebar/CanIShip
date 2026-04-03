@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from 'next'
 import Script from 'next/script'
+import CookieBanner from '@/components/CookieBanner'
 import './globals.css'
 
 export const viewport: Viewport = {
@@ -58,6 +59,7 @@ export default function RootLayout({
     <html lang="en" className="dark">
       <body className="bg-dark-900 text-white antialiased min-h-screen">
         {children}
+        <CookieBanner />
         {/* Plausible Analytics — privacy-first, no cookies, GDPR compliant */}
         <Script
           src="https://plausible.io/js/pa-CvZG1CbL6aEjx6rqGsKN1.js"

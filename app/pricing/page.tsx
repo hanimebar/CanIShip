@@ -256,8 +256,11 @@ export default function PricingPage() {
 
       {/* Footer */}
       <footer className="border-t border-dark-700 px-6 py-8">
-        <div className="max-w-6xl mx-auto text-center text-sm text-gray-600">
+        <div className="max-w-6xl mx-auto flex flex-wrap justify-center gap-6 text-sm text-gray-600">
           <Link href="/" className="hover:text-gray-400 transition-colors">Back to home</Link>
+          <Link href="/privacy" className="hover:text-gray-400 transition-colors">Privacy Policy</Link>
+          <Link href="/terms" className="hover:text-gray-400 transition-colors">Terms of Service</Link>
+          <Link href="/cookie-policy" className="hover:text-gray-400 transition-colors">Cookie Policy</Link>
         </div>
       </footer>
     </div>

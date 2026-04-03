@@ -157,6 +157,14 @@ export default function PrivacyPage() {
           <Link href="/" className="hover:text-gray-400 transition-colors">← Back to CanIShip</Link>
         </div>
       </div>
+
+      <footer className="border-t border-dark-700 px-6 py-8">
+        <div className="max-w-3xl mx-auto flex flex-wrap gap-6 text-sm text-gray-600">
+          <Link href="/terms" className="hover:text-gray-400 transition-colors">Terms of Service</Link>
+          <Link href="/cookie-policy" className="hover:text-gray-400 transition-colors">Cookie Policy</Link>
+          <span>© {new Date().getFullYear()} Äctvli Responsible Consulting</span>
+        </div>
+      </footer>
     </div>
   )
 }

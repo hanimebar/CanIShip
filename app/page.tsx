@@ -647,6 +647,7 @@ export default async function LandingPage() {
               <ul className="space-y-0 text-xs text-dock-300" style={{ fontFamily: "'Barlow Condensed', sans-serif" }}>
                 <li><Link href="/privacy" className="min-h-[44px] flex items-center hover:text-dock-200 uppercase tracking-widest transition-colors">Privacy Policy</Link></li>
                 <li><Link href="/terms" className="min-h-[44px] flex items-center hover:text-dock-200 uppercase tracking-widest transition-colors">Terms of Service</Link></li>
+                <li><Link href="/cookie-policy" className="min-h-[44px] flex items-center hover:text-dock-200 uppercase tracking-widest transition-colors">Cookie Policy</Link></li>
               </ul>
               <div className="mt-4 border border-dock-600 p-3 bg-dock-800">
                 <p className="text-xs text-dock-600 leading-relaxed">
