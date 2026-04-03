@@ -216,7 +216,7 @@ export default async function LandingPage() {
                 </Link>
               </div>
               <p className="mt-3 text-xs text-dock-500 uppercase tracking-wider" style={{ fontFamily: "'Barlow Condensed', sans-serif" }}>
-                No SDK. No installation. No credit card. One free inspection per month, always.
+                No SDK. No installation. No credit card. 3 free inspections per month, always.
               </p>
             </div>
 
@@ -444,7 +444,7 @@ export default async function LandingPage() {
                 price: '€0',
                 period: 'forever',
                 items: [
-                  '1 inspection per month',
+                  '3 inspections per month',
                   'Quick Scan (~5 min)',
                   'Functional, links, console errors',
                   'ShipScore + basic verdict',
@@ -460,7 +460,7 @@ export default async function LandingPage() {
                 price: '€19',
                 period: '/month',
                 items: [
-                  '10 inspections per month',
+                  '15 inspections per month',
                   'All scan depths',
                   'Full 8-layer report',
                   'Risk & Rewards analysis',

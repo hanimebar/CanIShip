@@ -211,7 +211,7 @@ Keep iterating until you hit the score and verdict you are comfortable shipping 
 
 | | Free | Builder — €19/mo | Studio — €49/mo |
 |--|------|-------------------|-----------------|
-| Audits per month | 1 | 10 | Unlimited |
+| Audits per month | 3 | 15 | Unlimited |
 | Quick Scan | Yes | Yes | Yes |
 | Standard Check | No | Yes | Yes |
 | Deep Audit | No | Yes | Yes |

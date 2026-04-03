@@ -214,7 +214,7 @@ License keys available at https://caniship.actvli.com/pricing (Studio plan).
 
 | Feature | Free | Builder (€19/mo) | Studio (€49/mo) |
 |---------|------|-------------------|-----------------|
-| Audits/month | 1 | 10 | Unlimited |
+| Audits/month | 3 | 15 | Unlimited |
 | Scan depth | Quick only | All depths | All depths |
 | Full reports | No | Yes | Yes |
 | Risk and Rewards | No | Yes | Yes |
