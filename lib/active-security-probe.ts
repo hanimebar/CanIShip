@@ -33,7 +33,8 @@ export type XssProbeResult = {
   form_url: string
   forms_found: number
   probe_sent: boolean
-  reflected: boolean      // Unique token found unencoded in response
+  reflected: boolean           // Raw unescaped <> chars in response → real risk
+  encoded_reflection: boolean  // Token present but HTML-encoded → framework handling correctly
   note?: string
 }
 
@@ -52,6 +53,7 @@ export type ActiveSecurityFlag = {
   severity: 'critical' | 'high' | 'medium' | 'low'
   remediation: string
   evidence?: string
+  is_informational?: boolean  // True = note only, does not affect score
 }
 
 // ── Common API paths to probe ────────────────────────────────────────────────
@@ -207,21 +209,33 @@ export async function runActiveSecurityProbe(options: {
   }
 
   // ── 3. XSS surface — form reflection check ──────────────────────────────────
-  // We fetch the page, find a form, and check if query params are reflected
-  // unencoded into the response. This does NOT submit forms with POST.
+  // Injects a token containing HTML-special characters (<>) and checks whether
+  // they appear RAW (real vulnerability) or HTML-encoded (framework handling
+  // correctly → informational note only, no score penalty).
   const xssProbe = await runXssSurfaceCheck(base, url)
   if (xssProbe.reflected) {
+    // Raw <> chars appeared in response — genuine reflection risk
     flags.push({
-      title: 'Potential XSS: user input reflected unencoded in page response',
-      description: `A unique test token was included in a request to the page and appeared unencoded in the response HTML. If this path handles user input without encoding, it may be vulnerable to reflected XSS.`,
+      title: 'Reflected XSS: user input reflected without HTML encoding',
+      description: `A test token containing HTML-special characters (<>) was injected via query parameter and appeared unescaped in the page response. An attacker could craft a URL that injects arbitrary HTML or JavaScript into the page for any visitor who clicks it.`,
       severity: 'high',
-      remediation: 'Ensure all user-controlled input is HTML-encoded before being written into the page. Use framework-level escaping (React JSX, Next.js template literals). Avoid `dangerouslySetInnerHTML`. Review all query parameter handling.',
+      remediation: 'HTML-encode all user-controlled values before writing them into the page. In React/Next.js use JSX expressions (never dangerouslySetInnerHTML with user input). In template engines use auto-escaping. In raw HTML output call htmlspecialchars() or equivalent.',
+    })
+  } else if (xssProbe.encoded_reflection) {
+    // Token appeared but HTML-encoded — framework is doing its job
+    flags.push({
+      title: 'URL parameters reflected in page (properly encoded — informational)',
+      description: `Query parameters are reflected into the page HTML, but the framework is correctly HTML-encoding them (e.g. < → &lt;). This is not exploitable as-is. Verify no code paths use dangerouslySetInnerHTML or equivalent with these values.`,
+      severity: 'low',
+      remediation: 'No immediate action required. Continue to avoid dangerouslySetInnerHTML with user-supplied data. Add a Content Security Policy to provide defence-in-depth.',
+      is_informational: true,
     })
   }
 
-  // ── Score ─────────────────────────────────────────────────────────────────
+  // ── Score — informational notes do not affect the score ──────────────────
   let score = 100
   for (const flag of flags) {
+    if (flag.is_informational) continue   // notes only, no penalty
     if (flag.severity === 'critical') score -= 35
     else if (flag.severity === 'high')   score -= 20
     else if (flag.severity === 'medium') score -= 10
@@ -232,34 +246,60 @@ export async function runActiveSecurityProbe(options: {
   return { error_leakage: errorLeakage, api_probes: apiProbes, xss_surface: xssProbe, flags, score }
 }
 
-// ── XSS surface: reflect test token via URL parameter ─────────────────────────
-
+// ── XSS surface: reflect test using an HTML-special-character token ───────────
+//
+// The key insight: a plain alphanumeric token reflects the same way in both
+// safe and unsafe apps (there is nothing to encode), so it always produces
+// false positives. Instead we use a token that CONTAINS < and >, then check:
+//
+//   body contains raw token (with literal < >)  → real, unescaped reflection
+//   body contains HTML-encoded version (&lt; &gt;) → framework encoded it → safe
+//   neither                                      → not reflected at all
+//
 async function runXssSurfaceCheck(base: string, url: string): Promise<XssProbeResult> {
-  const token = `caniship-xss-probe-${Math.random().toString(36).slice(2, 10)}`
+  // Unique base — alphanumeric only so we can search for it regardless of encoding
+  const id = Math.random().toString(36).slice(2, 10)
+  const base64Token  = `canishipprobe${id}`          // no special chars
+  const xssToken     = `${base64Token}<csp>`          // with HTML-special chars
+  const encodedToken = `${base64Token}&lt;csp&gt;`    // what a safe framework emits
 
   try {
-    // Try common query params that might be reflected into the page
-    const testUrl = `${url}${url.includes('?') ? '&' : '?'}q=${encodeURIComponent(token)}&search=${encodeURIComponent(token)}&error=${encodeURIComponent(token)}`
+    const testUrl = `${url}${url.includes('?') ? '&' : '?'}q=${encodeURIComponent(xssToken)}&search=${encodeURIComponent(xssToken)}&error=${encodeURIComponent(xssToken)}`
 
     const res = await fetch(testUrl, {
       headers: { 'User-Agent': 'CanIShip-Audit/1.0 (xss-surface)' },
       signal: AbortSignal.timeout(10000),
     })
 
-    if (!res.ok) return { form_url: testUrl, forms_found: 0, probe_sent: true, reflected: false }
+    if (!res.ok) {
+      return { form_url: testUrl, forms_found: 0, probe_sent: true, reflected: false, encoded_reflection: false }
+    }
 
     const body = await res.text()
-    // Check if the token appears unencoded (encoded would be &lt;, etc.)
-    // We use a plain alphanumeric token so encoding doesn't affect it —
-    // if it appears verbatim it means the URL param is reflected into the DOM
-    const reflected = body.includes(token)
+
+    // Raw reflection: literal < > chars in response → genuine risk
+    const rawReflected = body.includes(xssToken)
+
+    // Encoded reflection: framework escaped < to &lt; → handled correctly
+    const encodedReflected = !rawReflected && (
+      body.includes(encodedToken) ||
+      body.includes(`${base64Token}&#60;`) ||   // decimal entity variant
+      body.includes(`${base64Token}\\u003c`)     // JS unicode escape variant
+    )
+
+    const note = rawReflected
+      ? 'Raw HTML characters reflected unescaped — genuine XSS risk'
+      : encodedReflected
+        ? 'Reflected but HTML-encoded by framework — informational only'
+        : undefined
 
     return {
       form_url: testUrl,
       forms_found: (body.match(/<form/gi) || []).length,
       probe_sent: true,
-      reflected,
-      note: reflected ? 'Token appeared verbatim in response — URL param reflection confirmed' : undefined,
+      reflected: rawReflected,
+      encoded_reflection: encodedReflected,
+      note,
     }
   } catch (err) {
     return {
@@ -267,6 +307,7 @@ async function runXssSurfaceCheck(base: string, url: string): Promise<XssProbeRe
       forms_found: 0,
       probe_sent: false,
       reflected: false,
+      encoded_reflection: false,
       note: err instanceof Error ? err.message : 'Probe failed',
     }
   }

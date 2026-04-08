@@ -409,10 +409,16 @@ Stack trace leakage: ${stackLeaks.length > 0 ? `YES — ${stackLeaks.map(r => r.
 Server info disclosure: ${serverLeaks.length > 0 ? `YES — ${serverLeaks.map(r => [r.server_header, r.x_powered_by].filter(Boolean).join(', ')).join('; ')}` : 'None detected'}
 API paths probed: ${activeSecurityResults.api_probes.length}
 Unauthenticated data returned: ${unauthData.length > 0 ? `YES — ${unauthData.map(p => p.url).join(', ')}` : 'None'}
-XSS reflection probe: ${activeSecurityResults.xss_surface.probe_sent ? (activeSecurityResults.xss_surface.reflected ? 'INPUT REFLECTED — potential XSS surface' : 'No reflection detected') : 'Not sent'}
+XSS reflection probe: ${
+  !activeSecurityResults.xss_surface.probe_sent ? 'Not sent' :
+  activeSecurityResults.xss_surface.reflected ? 'RAW REFLECTION — genuine XSS risk (unescaped HTML chars in response)' :
+  activeSecurityResults.xss_surface.encoded_reflection ? 'ENCODED REFLECTION — framework is escaping correctly (informational only, not a vulnerability)' :
+  'No reflection detected'
+}
 
-Active security flags (${activeSecurityResults.flags.length}):
-${activeSecurityResults.flags.map(f => `- [${f.severity.toUpperCase()}] ${f.title}: ${f.description}${f.evidence ? `\n  Evidence: ${f.evidence.slice(0, 150)}` : ''}`).join('\n') || 'None'}
+Active security flags (${activeSecurityResults.flags.filter(f => !f.is_informational).length} real, ${activeSecurityResults.flags.filter(f => f.is_informational).length} informational):
+${activeSecurityResults.flags.filter(f => !f.is_informational).map(f => `- [${f.severity.toUpperCase()}] ${f.title}: ${f.description}${f.evidence ? `\n  Evidence: ${f.evidence.slice(0, 150)}` : ''}`).join('\n') || 'None'}
+${activeSecurityResults.flags.filter(f => f.is_informational).length > 0 ? `\nInformational notes (do not affect score):\n${activeSecurityResults.flags.filter(f => f.is_informational).map(f => `- [NOTE] ${f.title}: ${f.description}`).join('\n')}` : ''}
 ${activeSecurityResults.error ? `Runner error: ${activeSecurityResults.error}` : ''}`)
   }
 
