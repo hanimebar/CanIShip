@@ -61,9 +61,9 @@ export default function RootLayout({
         <a href="#main-content" className="skip-nav">
           Skip to main content
         </a>
-        <main id="main-content">
+        <div id="main-content">
           {children}
-        </main>
+        </div>
         <CookieBanner />
         {/* Plausible Analytics — privacy-first, no cookies, GDPR compliant */}
         <Script
