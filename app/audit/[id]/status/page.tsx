@@ -152,6 +152,23 @@ export default function AuditStatusPage() {
   const [messageIndex, setMessageIndex] = useState(0)
   const [dots, setDots] = useState('.')
   const [elapsed, setElapsed] = useState('')
+  const [cancelPending, setCancelPending] = useState(false)
+  const [cancelConfirm, setCancelConfirm] = useState(false)
+
+  const handleCancel = async () => {
+    if (!cancelConfirm) {
+      setCancelConfirm(true)
+      return
+    }
+    setCancelPending(true)
+    try {
+      await fetch(`/api/audit/${jobId}/cancel`, { method: 'POST' })
+      router.push('/dashboard')
+    } catch {
+      setCancelPending(false)
+      setCancelConfirm(false)
+    }
+  }
 
   const pollStatus = useCallback(async () => {
     if (!jobId) return
@@ -352,6 +369,37 @@ export default function AuditStatusPage() {
                 dashboard
               </Link>.
             </p>
+
+            {/* Cancel button — two-step confirm to prevent accidental taps */}
+            <div className="mt-6 pt-5 border-t border-dark-600">
+              {cancelConfirm ? (
+                <div className="space-y-2">
+                  <p className="text-xs text-amber-400 font-mono">Cancel this audit?</p>
+                  <div className="flex items-center justify-center gap-3">
+                    <button
+                      onClick={handleCancel}
+                      disabled={cancelPending}
+                      className="text-xs px-4 py-2 rounded border border-red-500/50 text-red-400 hover:bg-red-500/10 transition-colors disabled:opacity-50"
+                    >
+                      {cancelPending ? 'Cancelling…' : 'Yes, cancel audit'}
+                    </button>
+                    <button
+                      onClick={() => setCancelConfirm(false)}
+                      className="text-xs px-4 py-2 rounded border border-dark-400 text-gray-500 hover:text-gray-300 transition-colors"
+                    >
+                      Keep waiting
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <button
+                  onClick={handleCancel}
+                  className="text-xs text-gray-600 hover:text-gray-400 underline underline-offset-2 transition-colors"
+                >
+                  Cancel audit
+                </button>
+              )}
+            </div>
           </div>
         )}
       </div>
