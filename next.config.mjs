@@ -2,6 +2,11 @@ import { createRequire } from 'module'
 import { fileURLToPath } from 'url'
 import path from 'path'
 import { withSentryConfig } from '@sentry/nextjs'
+import bundleAnalyzer from '@next/bundle-analyzer'
+
+const withBundleAnalyzer = bundleAnalyzer({
+  enabled: process.env.ANALYZE === 'true',
+})
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
@@ -59,6 +64,8 @@ const nextConfig = {
   },
   experimental: {
     serverComponentsExternalPackages: RUNTIME_ONLY_PACKAGES,
+    // Tree-shake known large packages — only import what's used
+    optimizePackageImports: ['@supabase/supabase-js', '@supabase/ssr'],
   },
   images: {
     remotePatterns: [
@@ -102,7 +109,7 @@ const nextConfig = {
   },
 }
 
-export default withSentryConfig(nextConfig, {
+export default withBundleAnalyzer(withSentryConfig(nextConfig, {
   // Sentry org/project — set these in your Sentry dashboard
   org: process.env.SENTRY_ORG,
   project: process.env.SENTRY_PROJECT,
@@ -120,4 +127,12 @@ export default withSentryConfig(nextConfig, {
   // Suppress the "Sentry CLI not found" warning in environments without it
   disableLogger: true,
   telemetry: false,
-})
+
+  // Bundle size: don't widen file upload glob (avoids pulling extra source files)
+  widenClientFileUpload: false,
+
+  // Bundle size: exclude Sentry's request instrumentation on the client
+  // (we only need error reporting, not tracing every fetch/XHR)
+  disableClientWebpackPlugin: false,
+  autoInstrumentServerFunctions: false,
+}))
