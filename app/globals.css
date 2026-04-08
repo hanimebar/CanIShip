@@ -18,6 +18,29 @@
   --stamp-amber:  #B87300;  /* 5.1:1 — no change needed */
 }
 
+/* ─── Skip navigation ──────────────────────────────── */
+.skip-nav {
+  position: absolute;
+  top: -100%;
+  left: 1rem;
+  z-index: 9999;
+  padding: 0.75rem 1.25rem;
+  background: var(--amber);
+  color: #0F0C08;
+  font-family: 'Barlow Condensed', sans-serif;
+  font-weight: 700;
+  font-size: 0.9rem;
+  letter-spacing: 0.05em;
+  text-decoration: none;
+  border-radius: 0 0 4px 4px;
+  transition: top 0.1s;
+}
+.skip-nav:focus {
+  top: 0;
+  outline: 3px solid #0F0C08;
+  outline-offset: 2px;
+}
+
 * { box-sizing: border-box; }
 
 html { scroll-behavior: smooth; overflow-x: hidden; }

@@ -58,7 +58,12 @@ export default function RootLayout({
   return (
     <html lang="en" className="dark">
       <body className="bg-dark-900 text-white antialiased min-h-screen">
-        {children}
+        <a href="#main-content" className="skip-nav">
+          Skip to main content
+        </a>
+        <main id="main-content">
+          {children}
+        </main>
         <CookieBanner />
         {/* Plausible Analytics — privacy-first, no cookies, GDPR compliant */}
         <Script
