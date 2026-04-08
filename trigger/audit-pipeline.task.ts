@@ -61,15 +61,18 @@ export const auditPipelineTask = task({
 
     // ── Load all runners ─────────────────────────────────────────────────────
     /* eslint-disable @typescript-eslint/no-require-imports */
-    const { runPlaywrightAudit }  = require(`${runnerDir}/playwright-runner`)
-    const { runAxeAudit }         = require(`${runnerDir}/axe-runner`)
-    const { runLighthouseAudit }  = require(`${runnerDir}/lighthouse-runner`)
-    const { runSecurityChecks }   = require(`${runnerDir}/security-checker`)
-    const { runSeoChecks }        = require(`${runnerDir}/seo-checker`)
-    const { runMobileAudit }      = require(`${runnerDir}/mobile-runner`)
-    const { analyzeWithClaude }   = require(`${runnerDir}/claude-analyzer`)
-    const { generateReport }      = require(`${runnerDir}/report-generator`)
-    const { executeFlows }        = require(`${runnerDir}/flow-executor`)
+    const { runPlaywrightAudit }       = require(`${runnerDir}/playwright-runner`)
+    const { runAxeAudit }              = require(`${runnerDir}/axe-runner`)
+    const { runLighthouseAudit }       = require(`${runnerDir}/lighthouse-runner`)
+    const { runSecurityChecks }        = require(`${runnerDir}/security-checker`)
+    const { runSeoChecks }             = require(`${runnerDir}/seo-checker`)
+    const { runMobileAudit }           = require(`${runnerDir}/mobile-runner`)
+    const { runPrivacyChecks }         = require(`${runnerDir}/privacy-checker`)
+    const { runActiveSecurityProbe }   = require(`${runnerDir}/active-security-probe`)
+    const { runAuthHardeningChecks }   = require(`${runnerDir}/auth-hardening-checker`)
+    const { analyzeWithClaude }        = require(`${runnerDir}/claude-analyzer`)
+    const { generateReport }           = require(`${runnerDir}/report-generator`)
+    const { executeFlows }             = require(`${runnerDir}/flow-executor`)
     /* eslint-enable @typescript-eslint/no-require-imports */
 
     const setStep = (step: string) =>
@@ -143,6 +146,15 @@ export const auditPipelineTask = task({
       }
     }
 
+    // ── Phase 3b: Privacy, active security, and auth hardening (parallel) ────
+    logger.info('running privacy, active security, and auth hardening checks')
+    await setStep('probing')
+    const [privacyResults, activeSecurityResults, authHardeningResults] = await Promise.all([
+      runPrivacyChecks({ url: job.url }),
+      runActiveSecurityProbe({ url: job.url, depth: job.depth }),
+      runAuthHardeningChecks({ url: job.url, depth: job.depth }),
+    ])
+
     // ── Phase 4: Execute user flows ──────────────────────────────────────────
     const flowResults = (job.depth !== 'quick' && job.flows.length > 0)
       ? await executeFlows(job.url, job.flows, job.id, job.auth_config, deadline)
@@ -165,6 +177,9 @@ export const auditPipelineTask = task({
       screenshots: playwrightResults.screenshots ?? [],
       tier,
       flowResults,
+      privacyResults,
+      activeSecurityResults,
+      authHardeningResults,
     })
 
     const finalReport = generateReport(claudeReport, {
@@ -176,6 +191,9 @@ export const auditPipelineTask = task({
 
     finalReport.flow_results = flowResults.length > 0 ? flowResults : undefined
     finalReport.pages_audited = playwrightResults.pageAudits.length + 1
+    finalReport.privacy_score = privacyResults?.score
+    finalReport.active_security_score = activeSecurityResults?.score
+    finalReport.auth_hardening_score = authHardeningResults?.score
 
     // ── Persist screenshots ──────────────────────────────────────────────────
     const allScreenshots = playwrightResults.screenshots ?? []

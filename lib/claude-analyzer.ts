@@ -17,6 +17,9 @@ import type { SecurityResults } from './security-checker'
 import type { SeoResults } from './seo-checker'
 import type { MobileResults } from './mobile-runner'
 import type { ClaudeReport, FlowExecutionResult, ReportTier } from './supabase'
+import type { PrivacyResults } from './privacy-checker'
+import type { ActiveSecurityResults } from './active-security-probe'
+import type { AuthHardeningResults } from './auth-hardening-checker'
 
 const MODEL = 'claude-sonnet-4-20250514'
 
@@ -33,7 +36,10 @@ export type ClaudeAnalyzerInput = {
   seoResults: SeoResults
   mobileResults: MobileResults
   screenshots: Array<{ filename: string; storage_path: string; step_label: string }>
-  flowResults?: FlowExecutionResult[]   // actual execution results from flow-executor
+  flowResults?: FlowExecutionResult[]
+  privacyResults?: PrivacyResults
+  activeSecurityResults?: ActiveSecurityResults
+  authHardeningResults?: AuthHardeningResults
 }
 
 // ─── Token budgets per tier ────────────────────────────────────────────────
@@ -177,7 +183,7 @@ function buildUserPrompt(input: ClaudeAnalyzerInput): string {
   const { url, description, flows, tier, target_platform = 'all',
           playwrightResults, axeResults,
           lighthouseResults, securityResults, seoResults, mobileResults,
-          flowResults } = input
+          flowResults, privacyResults, activeSecurityResults, authHardeningResults } = input
 
   const sections: string[] = []
 
@@ -370,6 +376,59 @@ ${mobileResults.error ? `Runner error: ${mobileResults.error}` : ''}`)
     sections.push(`## Executed Flow Results\nThese flows were ACTUALLY EXECUTED by Playwright. Treat failures as confirmed bugs, not hypothetical issues.\n\n${flowLines.join('\n\n')}`)
   } else if (flows.length > 0) {
     sections.push(`## Flows (not executed — quick scan)\nThe following flows were described by the user but NOT executed (requires standard/deep scan):\n${flows.map((f) => `- ${f}`).join('\n')}`)
+  }
+
+  // ── Privacy & GDPR surface ───────────────────────────────────────────────
+  if (privacyResults) {
+    const detectedTrackers = privacyResults.trackers.filter(t => t.detected)
+    const advertisingTrackers = detectedTrackers.filter(t => t.category === 'advertising')
+    sections.push(`## Privacy & GDPR Surface Scan
+Score: ${privacyResults.score}/100
+Cookie consent banner: ${privacyResults.cookieBannerDetected ? `YES (${privacyResults.cookieBannerProvider || 'generic'})` : 'NOT DETECTED'}
+Privacy policy linked: ${privacyResults.privacyPolicyLinked ? `Yes (${privacyResults.privacyPolicyUrl || 'found'})` : 'NOT FOUND'}
+Terms linked: ${privacyResults.termsLinked ? 'Yes' : 'NOT FOUND'}
+Data deletion mechanism: ${privacyResults.dataDeletionMechanism ? 'Present' : 'NOT FOUND'}
+GDPR contact present: ${privacyResults.gdprContactPresent ? 'Yes' : 'NOT FOUND'}
+Trackers detected (${detectedTrackers.length}): ${detectedTrackers.length > 0 ? detectedTrackers.map(t => `${t.name} (${t.category})`).join(', ') : 'None'}
+Advertising trackers: ${advertisingTrackers.length > 0 ? advertisingTrackers.map(t => t.name).join(', ') : 'None'}
+
+Privacy flags (${privacyResults.flags.length}):
+${privacyResults.flags.map(f => `- [${f.severity.toUpperCase()}] ${f.title}: ${f.description}`).join('\n') || 'None'}
+${privacyResults.error ? `Runner error: ${privacyResults.error}` : ''}`)
+  }
+
+  // ── Active security probe ────────────────────────────────────────────────
+  if (activeSecurityResults) {
+    const stackLeaks = activeSecurityResults.error_leakage.filter(r => r.leaks_stack_trace)
+    const serverLeaks = activeSecurityResults.error_leakage.filter(r => r.leaks_server_info)
+    const unauthData  = activeSecurityResults.api_probes.filter(p => p.returns_data)
+    sections.push(`## Active Security Probe
+Score: ${activeSecurityResults.score}/100
+Error leakage probes run: ${activeSecurityResults.error_leakage.length}
+Stack trace leakage: ${stackLeaks.length > 0 ? `YES — ${stackLeaks.map(r => r.probe_url).join(', ')}` : 'None detected'}
+Server info disclosure: ${serverLeaks.length > 0 ? `YES — ${serverLeaks.map(r => [r.server_header, r.x_powered_by].filter(Boolean).join(', ')).join('; ')}` : 'None detected'}
+API paths probed: ${activeSecurityResults.api_probes.length}
+Unauthenticated data returned: ${unauthData.length > 0 ? `YES — ${unauthData.map(p => p.url).join(', ')}` : 'None'}
+XSS reflection probe: ${activeSecurityResults.xss_surface.probe_sent ? (activeSecurityResults.xss_surface.reflected ? 'INPUT REFLECTED — potential XSS surface' : 'No reflection detected') : 'Not sent'}
+
+Active security flags (${activeSecurityResults.flags.length}):
+${activeSecurityResults.flags.map(f => `- [${f.severity.toUpperCase()}] ${f.title}: ${f.description}${f.evidence ? `\n  Evidence: ${f.evidence.slice(0, 150)}` : ''}`).join('\n') || 'None'}
+${activeSecurityResults.error ? `Runner error: ${activeSecurityResults.error}` : ''}`)
+  }
+
+  // ── Auth hardening ───────────────────────────────────────────────────────
+  if (authHardeningResults) {
+    const { password_reset, login_failure } = authHardeningResults
+    sections.push(`## Auth Hardening Probe
+Score: ${authHardeningResults.score}/100
+Password reset endpoint: ${password_reset.endpoint_found ? `Found at ${password_reset.endpoint}` : 'Not found (common paths checked)'}
+Password reset enumeration: ${password_reset.endpoint_found ? password_reset.enumeration_risk.toUpperCase() : 'N/A'}
+Login endpoint: ${login_failure.endpoint_found ? `Found at ${login_failure.endpoint}` : 'Not found (common paths checked)'}
+Login enumeration: ${login_failure.endpoint_found ? login_failure.enumeration_risk.toUpperCase() : 'N/A'}
+
+Auth hardening flags (${authHardeningResults.flags.length}):
+${authHardeningResults.flags.map(f => `- [${f.severity.toUpperCase()}] ${f.title}: ${f.description}`).join('\n') || 'None'}
+${authHardeningResults.error ? `Runner error: ${authHardeningResults.error}` : ''}`)
   }
 
   // Output schema — varies by tier

@@ -7,7 +7,7 @@ import Link from 'next/link'
 type JobStatus = {
   status: 'queued' | 'running' | 'complete' | 'failed'
   job_id: string
-  current_step?: 'playwright' | 'axe' | 'lighthouse' | 'security' | 'claude'
+  current_step?: 'playwright' | 'axe' | 'lighthouse' | 'security' | 'probing' | 'claude'
   report_id?: string
   ship_score?: number
   ship_verdict?: string
@@ -17,7 +17,7 @@ type JobStatus = {
   completed_at?: string
 }
 
-const AUDIT_STEPS = ['playwright', 'axe', 'lighthouse', 'security', 'claude'] as const
+const AUDIT_STEPS = ['playwright', 'axe', 'lighthouse', 'security', 'probing', 'claude'] as const
 type AuditStep = typeof AUDIT_STEPS[number]
 
 function stepState(step: AuditStep, currentStep: AuditStep | undefined, jobComplete: boolean): 'done' | 'running' | 'pending' {
@@ -315,6 +315,7 @@ export default function AuditStatusPage() {
                 { step: 'axe'        as AuditStep, label: 'axe-core: accessibility audit' },
                 { step: 'lighthouse' as AuditStep, label: 'Lighthouse: performance' },
                 { step: 'security'   as AuditStep, label: 'Security surface scan' },
+                { step: 'probing'    as AuditStep, label: 'Privacy, XSS & auth hardening probes' },
                 { step: 'claude'     as AuditStep, label: 'Claude AI: analysis + report generation' },
               ]).map(({ step, label }) => {
                 const state = stepState(step, jobStatus?.current_step, jobStatus?.status === 'complete')

@@ -182,6 +182,21 @@ async function runAuditPipeline(job: AuditJob) {
     runMobileAudit({ url: job.url, deadline }),
   ])
 
+  // ── Privacy, active security probing, and auth hardening ─────────────────
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
+  const { runPrivacyChecks }          = require(/* webpackIgnore: true */ `${runnerDir}/privacy-checker`)
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
+  const { runActiveSecurityProbe }    = require(/* webpackIgnore: true */ `${runnerDir}/active-security-probe`)
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
+  const { runAuthHardeningChecks }    = require(/* webpackIgnore: true */ `${runnerDir}/auth-hardening-checker`)
+
+  await setStep('probing')
+  const [privacyResults, activeSecurityResults, authHardeningResults] = await Promise.all([
+    runPrivacyChecks({ url: job.url }),
+    runActiveSecurityProbe({ url: job.url, depth: job.depth }),
+    runAuthHardeningChecks({ url: job.url, depth: job.depth }),
+  ])
+
   // ── Execute user-defined flows (standard/deep only) ───────────────────────
   // eslint-disable-next-line @typescript-eslint/no-require-imports
   const { executeFlows } = require(/* webpackIgnore: true */ `${runnerDir}/flow-executor`)
@@ -227,6 +242,9 @@ async function runAuditPipeline(job: AuditJob) {
     screenshots,
     tier,
     flowResults,
+    privacyResults,
+    activeSecurityResults,
+    authHardeningResults,
   })
 
   const finalReport = generateReport(claudeReport, {
@@ -239,6 +257,9 @@ async function runAuditPipeline(job: AuditJob) {
   // Attach flow results and page count to the stored report
   finalReport.flow_results = flowResults.length > 0 ? flowResults : undefined
   finalReport.pages_audited = playwrightResults.pageAudits.length + 1 // +1 for homepage
+  finalReport.privacy_score = privacyResults?.score
+  finalReport.active_security_score = activeSecurityResults?.score
+  finalReport.auth_hardening_score = authHardeningResults?.score
 
   await supabase.from('audit_reports').insert({
     job_id: job.id,
