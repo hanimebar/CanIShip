@@ -17,7 +17,7 @@ const differentiatorsRows = [
   { field: 'Setup required',      caniship: 'None. Paste a URL.',    others: 'SDK, CLI, or browser extension' },
   { field: 'Input',               caniship: 'Plain English + URL',   others: 'YAML config or code annotations' },
   { field: 'Output',              caniship: 'Report a founder reads', others: 'Report a QA team reads' },
-  { field: 'Covers',              caniship: '8 audit layers in one',  others: 'Usually 1–2 layers per tool' },
+  { field: 'Covers',              caniship: '8 layers everyone checks. 4 layers nobody else does.',  others: 'Usually 1–2 layers per tool' },
   { field: 'Risk + Rewards',      caniship: 'Included',              others: 'Not included' },
   { field: 'Forward roadmap',     caniship: 'Included',              others: 'Not included' },
   { field: 'Price',               caniship: 'From €0',               others: 'From $49–$500/month' },
@@ -69,7 +69,7 @@ export default async function LandingPage() {
         applicationCategory: 'DeveloperApplication',
         operatingSystem: 'Web',
         url: 'https://caniship.actvli.com',
-        description: 'Automated pre-launch QA for web applications. Eight audit layers: functional tests, accessibility (WCAG 2.1 AA), Core Web Vitals, security headers, SEO, mobile readiness.',
+        description: 'Automated pre-launch QA for web applications. 12 audit layers: functional tests, accessibility (WCAG 2.1 AA), Core Web Vitals, security headers, SEO, mobile readiness, privacy compliance, active security probing, and auth hardening.',
         offers: [
           { '@type': 'Offer', price: '0', priceCurrency: 'EUR', name: 'Free Berth' },
           { '@type': 'Offer', price: '19', priceCurrency: 'EUR', name: 'Builder Berth' },
@@ -284,7 +284,7 @@ export default async function LandingPage() {
               className="text-dock-50 text-2xl"
               style={{ fontFamily: "'Playfair Display', serif", fontWeight: 700 }}
             >
-              The Eight-Layer Inspection Protocol
+              8 layers everyone checks. 4 layers nobody else does.
             </h3>
             <span className="text-xs text-dock-500 uppercase tracking-widest" style={{ fontFamily: "'Barlow Condensed', sans-serif" }}>
               All layers run on every inspection
@@ -595,7 +595,7 @@ export default async function LandingPage() {
             <div className="md:col-span-1">
               <div className="text-dock-50 font-black text-xl mb-2" style={{ fontFamily: "'Playfair Display', serif" }}>CanIShip</div>
               <p className="text-xs text-dock-500 leading-relaxed mb-4">
-                Automated cargo inspection for web applications. Eight audit layers. One honest verdict.
+                Automated cargo inspection for web applications. 8 layers everyone checks. 4 layers nobody else does. One honest verdict.
               </p>
               <a
                 href="https://www.linkedin.com/company/actvli"
