@@ -171,7 +171,7 @@ export function ReportView({ report }: Props) {
       {/* Security */}
       {r.security_flags.length > 0 && (
         <div>
-          {sectionLabel('Security Flags', r.security_flags.length, '#CC0000')}
+          {sectionLabel('Security Flags', r.security_flags.length, '#FF3B30')}
           {r.security_flags.map((flag, i) => (
             <BugCard key={i} item={flag} variant="security" index={i} />
           ))}

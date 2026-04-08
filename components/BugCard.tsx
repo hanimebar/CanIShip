@@ -46,9 +46,9 @@ const variantConfig: Record<CardVariant, {
     icon: '⚡',
   },
   security: {
-    color: '#CC0000',
-    bg: 'rgba(204, 0, 0, 0.08)',
-    border: 'rgba(204, 0, 0, 0.3)',
+    color: '#FF3B30',
+    bg: 'rgba(255, 59, 48, 0.08)',
+    border: 'rgba(255, 59, 48, 0.3)',
     label: 'SECURITY',
     icon: '🔒',
   },
@@ -193,8 +193,8 @@ export function BugCard({ item, variant, index }: Props) {
                 <span
                   className="text-xs font-mono px-1.5 py-0.5 rounded"
                   style={{
-                    color: item.ai_confidence === 'high' ? '#2D6A2D' : item.ai_confidence === 'medium' ? '#B87300' : '#CC2200',
-                    backgroundColor: item.ai_confidence === 'high' ? '#2D6A2D20' : item.ai_confidence === 'medium' ? '#B8730020' : '#CC220020',
+                    color: item.ai_confidence === 'high' ? '#5A9A5A' : item.ai_confidence === 'medium' ? '#B87300' : '#EC4826',
+                    backgroundColor: item.ai_confidence === 'high' ? '#5A9A5A20' : item.ai_confidence === 'medium' ? '#B8730020' : '#EC482620',
                   }}
                 >
                   {item.ai_confidence} confidence

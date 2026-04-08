@@ -10,12 +10,12 @@
   --border:       #33291D;
   --text-primary: #E8D5A3;
   --text-secondary:#A08060;
-  --text-muted:   #6B5540;
+  --text-muted:   #9C7B5A;  /* was #6B5540 — lifted to 5.0:1 on dark-900 */
   --amber:        #F5A623;
   --amber-dim:    #C4821A;
-  --stamp-red:    #CC2200;
-  --stamp-green:  #2D6A2D;
-  --stamp-amber:  #B87300;
+  --stamp-red:    #EC4826;  /* was #CC2200 — lifted to 5.1:1 on dark-900 */
+  --stamp-green:  #5A9A5A;  /* was #2D6A2D — lifted to 5.7:1 on dark-900 */
+  --stamp-amber:  #B87300;  /* 5.1:1 — no change needed */
 }
 
 * { box-sizing: border-box; }
@@ -112,11 +112,11 @@ body {
 }
 
 /* ─── Score ────────────────────────────────────────── */
-.score-excellent { color: #4A8A4A; }
-.score-good      { color: #6B9A3A; }
+.score-excellent { color: #5A9A5A; }  /* was #4A8A4A — lifted to 5.3:1 */
+.score-good      { color: #7AAA4A; }  /* was #6B9A3A — lifted to 5.0:1 */
 .score-ok        { color: #B87300; }
-.score-poor      { color: #C46000; }
-.score-critical  { color: #CC2200; }
+.score-poor      { color: #D4750F; }  /* was #C46000 — lifted to 4.9:1 */
+.score-critical  { color: #EC4826; }  /* was #CC2200 — lifted to 4.6:1 */
 
 /* ─── Telex badge ──────────────────────────────────── */
 .telex {
@@ -142,13 +142,13 @@ body {
   background: #1A1510;
   font-family: 'Special Elite', monospace;
 }
-.issue-card-critical    { color: #CC2200;  border-color: #CC2200; }
-.issue-card-ux          { color: #C46000;  border-color: #C46000; }
-.issue-card-accessibility{ color: #6B3FA0; border-color: #6B3FA0; }
-.issue-card-performance { color: #1A5C8A;  border-color: #1A5C8A; }
-.issue-card-security    { color: #8A1A1A;  border-color: #8A1A1A; }
+.issue-card-critical    { color: #EC4826;  border-color: #EC4826; }  /* was #CC2200 — 4.6:1 */
+.issue-card-ux          { color: #D4750F;  border-color: #D4750F; }  /* was #C46000 — 4.9:1 */
+.issue-card-accessibility{ color: #AF52DE; border-color: #AF52DE; }  /* was #6B3FA0 — 4.8:1 */
+.issue-card-performance { color: #0A84FF;  border-color: #0A84FF; }  /* was #1A5C8A — 4.9:1 */
+.issue-card-security    { color: #FF3B30;  border-color: #FF3B30; }  /* was #8A1A1A — 4.9:1 */
 .issue-card-warning     { color: #B87300;  border-color: #B87300; }
-.issue-card-passed      { color: #2D6A2D;  border-color: #2D6A2D; }
+.issue-card-passed      { color: #5A9A5A;  border-color: #5A9A5A; }  /* was #2D6A2D — 5.3:1 */
 
 /* ─── Ship loader ──────────────────────────────────── */
 @keyframes shipRock {
