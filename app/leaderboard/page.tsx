@@ -132,7 +132,7 @@ export default async function LeaderboardPage() {
                 {/* Rank + icon + hostname */}
                 <div className="flex items-center gap-3 min-w-0">
                   <span className="text-xs text-gray-600 w-5 shrink-0">{i + 1}</span>
-                  {entry.app_icon_url ? (
+                  {entry.app_icon_url?.startsWith('https://') ? (
                     /* eslint-disable-next-line @next/next/no-img-element */
                     <img
                       src={entry.app_icon_url}

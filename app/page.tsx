@@ -83,7 +83,7 @@ export default async function LandingPage() {
     <div className="min-h-screen bg-dock-900 text-dock-100" style={{ fontFamily: "'Special Elite', 'Courier New', monospace" }}>
       <script
         type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd).replace(/</g, '\\u003c') }}
       />
 
       {/* ── Masthead ─────────────────────────────────────────── */}

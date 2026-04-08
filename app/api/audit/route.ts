@@ -122,6 +122,21 @@ export async function POST(req: NextRequest) {
       )
     }
 
+    // ── Validate app_icon_url — must be https:// to prevent data: URI injection ─
+    let safeIconUrl: string | undefined
+    if (app_icon_url && typeof app_icon_url === 'string') {
+      try {
+        const iconParsed = new URL(app_icon_url.trim())
+        if (iconParsed.protocol !== 'https:') throw new Error()
+        safeIconUrl = iconParsed.href
+      } catch {
+        return NextResponse.json(
+          { error: 'app_icon_url must be a valid https:// URL' },
+          { status: 400 }
+        )
+      }
+    }
+
     // ── Validate callback_url if provided ───────────────────────────────────
     let callbackUrl: string | undefined
     if (callback_url !== undefined) {
@@ -257,7 +272,7 @@ export async function POST(req: NextRequest) {
         depth: auditDepth,
         target_platform: auditPlatform,
         is_public: is_public !== false,
-        ...(app_icon_url && typeof app_icon_url === 'string' ? { app_icon_url: app_icon_url.trim() } : {}),
+        ...(safeIconUrl ? { app_icon_url: safeIconUrl } : {}),
         status: 'queued',
         ...(callbackUrl ? { callback_url: callbackUrl } : {}),
         ...(validatedAuthConfig ? { auth_config: validatedAuthConfig } : {}),
