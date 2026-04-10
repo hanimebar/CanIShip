@@ -14,6 +14,12 @@ export type PlaywrightOptions = {
   jobId: string
   deadline: number
   authConfig?: import('./supabase').AuthConfig
+  /**
+   * Skip the internal multi-page crawl (auditMultiPage).
+   * Set to true when the caller (e.g. Trigger.dev pipeline) handles
+   * multi-page auditing itself via fan-out — prevents pages being crawled twice.
+   */
+  skipMultiPage?: boolean
 }
 
 export type NetworkRequest = {
@@ -134,7 +140,7 @@ function newContext(browser: Browser, mobile = false): Promise<BrowserContext> {
 }
 
 export async function runPlaywrightAudit(options: PlaywrightOptions): Promise<PlaywrightResults> {
-  const { url, depth, jobId, deadline, authConfig } = options
+  const { url, depth, jobId, deadline, authConfig, skipMultiPage = false } = options
 
   const results: PlaywrightResults = {
     functionalIssues: [],
@@ -185,7 +191,9 @@ export async function runPlaywrightAudit(options: PlaywrightOptions): Promise<Pl
       }
 
       // ---- Multi-page crawl: standard visits 5 pages, deep visits 12 ----
-      if (depth === 'standard' || depth === 'deep') {
+      // Skip when the caller handles fan-out itself (e.g. Trigger.dev pipeline)
+      // to avoid auditing the same pages twice.
+      if (!skipMultiPage && (depth === 'standard' || depth === 'deep')) {
         const pageLimit = depth === 'deep' ? 12 : 5
         await auditMultiPage(browser, url, jobId, results, hasStrictCsp, pageLimit, deadline, authConfig)
       }
@@ -318,7 +326,7 @@ async function auditHomepage(
 
     try {
       const response = await page.goto(url, {
-        waitUntil: hasStrictCsp ? 'domcontentloaded' : 'networkidle',
+        waitUntil: hasStrictCsp ? 'domcontentloaded' : 'load',
         timeout: Math.min(30000, deadline - Date.now()),
       })
 
@@ -421,36 +429,35 @@ async function checkBrokenLinks(
 ) {
   // pagesVisited[0] is the homepage (already verified). The rest are discovered internal links.
   const internalLinks = results.pagesVisited.slice(1)
-  const maxLinks = depth === 'quick' ? 10 : depth === 'standard' ? 30 : 60
-  const linksToCheck = internalLinks.slice(0, maxLinks)
+  const maxLinks = depth === 'quick' ? 10 : depth === 'standard' ? 30 : 50
+  const linksToCheck = Array.from(new Set(internalLinks)).slice(0, maxLinks)
 
-  const checked = new Set<string>([baseUrl])
+  if (linksToCheck.length === 0) return
 
-  for (const linkUrl of linksToCheck) {
-    if (Date.now() > deadline - 10000) break
-    if (checked.has(linkUrl)) continue
-    checked.add(linkUrl)
+  // Run 5 concurrent checks instead of sequential — reduces worst-case time by ~5x.
+  const CONCURRENCY = 5
+  const deadlineBuffer = 15000
 
+  async function checkOne(linkUrl: string): Promise<void> {
+    if (Date.now() > deadline - deadlineBuffer) return
     try {
       const response = await fetch(linkUrl, {
         method: 'HEAD',
-        signal: AbortSignal.timeout(8000),
+        signal: AbortSignal.timeout(6000),
       })
-
       if (response.status >= 400) {
-        results.brokenLinks.push({
-          href: linkUrl,
-          sourceUrl: baseUrl,
-          status: response.status,
-        })
+        results.brokenLinks.push({ href: linkUrl, sourceUrl: baseUrl, status: response.status })
       }
     } catch {
-      results.brokenLinks.push({
-        href: linkUrl,
-        sourceUrl: baseUrl,
-        status: 0,
-      })
+      results.brokenLinks.push({ href: linkUrl, sourceUrl: baseUrl, status: 0 })
     }
+  }
+
+  // Process in batches of CONCURRENCY
+  for (let i = 0; i < linksToCheck.length; i += CONCURRENCY) {
+    if (Date.now() > deadline - deadlineBuffer) break
+    const batch = linksToCheck.slice(i, i + CONCURRENCY)
+    await Promise.all(batch.map(checkOne))
   }
 }
 
@@ -739,7 +746,7 @@ async function auditMultiPage(
 
       const startTime = Date.now()
       const response = await page.goto(pageUrl, {
-        waitUntil: hasStrictCsp ? 'domcontentloaded' : 'networkidle',
+        waitUntil: hasStrictCsp ? 'domcontentloaded' : 'load',
         timeout: Math.min(20000, deadline - Date.now()),
       })
       const loadTimeMs = Date.now() - startTime

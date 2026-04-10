@@ -89,6 +89,7 @@ export const auditPipelineTask = task({
       jobId: job.id,
       deadline,
       authConfig: job.auth_config,
+      skipMultiPage: true, // pipeline fans out page tasks itself via batchTriggerAndWait
     })
 
     // ── Phase 2: axe, Lighthouse, security — run sequentially for step tracking ─

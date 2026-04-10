@@ -69,7 +69,7 @@ export const auditPageTask = task({
 
       const startTime = Date.now()
       const response = await page.goto(url, {
-        waitUntil: hasStrictCsp ? 'domcontentloaded' : 'networkidle',
+        waitUntil: hasStrictCsp ? 'domcontentloaded' : 'load',
         timeout: 20_000,
       })
 
