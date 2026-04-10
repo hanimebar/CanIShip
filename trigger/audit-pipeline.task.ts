@@ -187,6 +187,11 @@ export const auditPipelineTask = task({
       axeResults,
       lighthouseResults,
       securityResults,
+      privacyResults,
+      activeSecurityResults,
+      authHardeningResults,
+      flowResults,
+      targetPlatform: job.target_platform,
     })
 
     finalReport.flow_results = flowResults.length > 0 ? flowResults : undefined

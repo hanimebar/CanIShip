@@ -252,6 +252,11 @@ async function runAuditPipeline(job: AuditJob) {
     axeResults,
     lighthouseResults,
     securityResults,
+    privacyResults,
+    activeSecurityResults,
+    authHardeningResults,
+    flowResults,
+    targetPlatform: job.target_platform ?? 'all',
   })
 
   // Attach flow results and page count to the stored report

@@ -138,6 +138,8 @@ async function runDockerAuditPipeline(jobId: string) {
 
   const finalReport = generateReport(claudeReport, {
     playwrightResults, axeResults, lighthouseResults, securityResults,
+    flowResults,
+    targetPlatform: job.target_platform ?? 'all',
   })
 
   finalReport.flow_results = flowResults.length > 0 ? flowResults : undefined

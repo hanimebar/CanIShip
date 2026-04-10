@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { createSupabaseBrowserClient } from '@/lib/supabase'
 
@@ -342,9 +343,15 @@ export function SettingsClient({ currentName, email, plan, isOAuthUser, hasStrip
                     <p className="text-xs text-gray-500">
                       Add <code className="text-gray-300 font-mono">uses: actvli/caniship-action@v1</code> to any GitHub Actions workflow.
                       Set <code className="text-gray-300 font-mono">min_score: 75</code> to fail builds automatically.
-                      Full guide in the <a href="https://github.com/hanimebar/CanIShip/blob/main/DOCKER.md" target="_blank" rel="noopener noreferrer" className="text-neon-green hover:underline">DOCKER.md</a>.
                     </p>
                   </div>
+                </div>
+
+                {/* Full guide link */}
+                <div className="pt-1">
+                  <Link href="/docker" className="text-xs text-neon-green hover:underline font-medium">
+                    Full setup guide — env vars, CI/CD, Docker Compose, offline use →
+                  </Link>
                 </div>
               </>
             ) : (

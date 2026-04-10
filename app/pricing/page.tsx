@@ -1,7 +1,7 @@
 'use client'
 
 import Link from 'next/link'
-import { useState } from 'react'
+import { useState, type ReactNode } from 'react'
 
 const plans = [
   {
@@ -72,7 +72,9 @@ const plans = [
   },
 ]
 
-const faqs = [
+type Faq = { q: string; a: string | ReactNode }
+
+const faqs: Faq[] = [
   {
     q: 'What happens when I hit my monthly audit limit?',
     a: "You'll see a friendly message and a link to upgrade. Your existing reports remain accessible.",
@@ -82,12 +84,31 @@ const faqs = [
     a: 'Yes — any publicly accessible URL. Private apps behind auth require you to share test credentials in the flow description (we recommend creating a dedicated test account).',
   },
   {
-    q: "How does the Docker self-hosted option work?",
-    a: "Studio subscribers get a license key and a Docker image. Run `docker run -p 3000:3000 -e ANTHROPIC_API_KEY=sk-... -e LICENSE_KEY=... hanimebar/caniship`. No data leaves your machine.",
+    q: 'What is the Docker self-hosted option and why does it exist?',
+    a: (
+      <>
+        <span className="block mb-2">
+          The Docker image is the full CanIShip audit engine packaged to run on your own machine or server.
+          We built it because a lot of real work happens before anything goes public — staging environments behind VPNs,
+          local builds, internal tools where sending URLs to a third-party cloud isn&apos;t acceptable.
+        </span>
+        <span className="block mb-2">
+          When you run it locally, nothing leaves your network. Audit data stays in a volume you control.
+          The only outbound call is a license check back to us once every 24 hours — after that it works fully offline.
+        </span>
+        <span className="block mb-2">
+          It&apos;s also the way to add CanIShip to a CI/CD pipeline — set <code className="font-mono text-gray-300">MIN_SCORE=75</code> and
+          your GitHub Actions build fails automatically if quality drops.
+        </span>
+        <Link href="/docker" className="text-neon-green hover:underline text-xs font-medium">
+          Full setup guide →
+        </Link>
+      </>
+    ),
   },
   {
     q: 'How accurate is the ShipScore?',
-    a: 'The score reflects real findings from Playwright, axe-core, Lighthouse, and security checks — synthesized by Claude. It is honest, not optimistic. A score above 85 means no critical issues were found.',
+    a: 'The score is calculated from real findings — Playwright, axe-core, Lighthouse, security probes, and flow execution results — using a fixed weighted formula. It is honest, not optimistic. A score above 85 means no critical issues were found.',
   },
   {
     q: 'Can I cancel anytime?',
@@ -248,7 +269,7 @@ export default function PricingPage() {
           {faqs.map(({ q, a }) => (
             <div key={q} className="rounded-xl border border-dark-500 bg-dark-800 p-6">
               <h3 className="font-semibold text-white mb-2">{q}</h3>
-              <p className="text-gray-400 text-sm leading-relaxed">{a}</p>
+              <div className="text-gray-400 text-sm leading-relaxed">{a}</div>
             </div>
           ))}
         </div>
