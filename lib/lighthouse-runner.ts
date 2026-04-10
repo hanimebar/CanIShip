@@ -107,6 +107,10 @@ export async function runLighthouseAudit(options: LighthouseOptions): Promise<Li
 
     const chrome = await launch({
       chromePath: chromiumPath,
+      // Explicit userDataDir avoids chrome-launcher trying to compute a temp
+      // path via os.tmpdir() — which can return undefined in some containerised
+      // environments and triggers the same "path must be string" error.
+      userDataDir: `/tmp/caniship-lighthouse-${Date.now()}`,
       chromeFlags: [
         '--headless',
         '--no-sandbox',
@@ -118,6 +122,14 @@ export async function runLighthouseAudit(options: LighthouseOptions): Promise<Li
         '--disable-component-extensions-with-background-pages',
       ],
     })
+
+    // If Chrome launched but failed to bind a port (OOM, sandbox crash, etc.),
+    // chrome.port is undefined. Passing it to Lighthouse causes the cryptic
+    // "path argument must be string" error deep inside Lighthouse internals.
+    if (!chrome.port || typeof chrome.port !== 'number') {
+      await chrome.kill().catch(() => { /* ignore */ })
+      throw new Error(`Chrome launched but did not return a valid debugging port (got: ${chrome.port})`)
+    }
 
     try {
       // ── Desktop run ────────────────────────────────────────────
@@ -240,7 +252,7 @@ export async function runLighthouseAudit(options: LighthouseOptions): Promise<Li
     // Local Lighthouse failed (common in memory-constrained containerised environments).
     // Fall back to PageSpeed Insights API — runs Lighthouse on Google's infrastructure,
     // works for any publicly accessible URL.
-    console.warn('[Lighthouse] Local run failed, trying PSI fallback:', err instanceof Error ? err.message : String(err))
+    console.warn('[Lighthouse] Local run failed, trying PSI fallback:', err instanceof Error ? err.stack ?? err.message : String(err))
     const psiResult = await runPsiAudit(url)
     if (psiResult) {
       console.log('[Lighthouse] PSI fallback succeeded')
